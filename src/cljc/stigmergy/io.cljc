@@ -28,3 +28,12 @@
 
   ([path]
    (mkdirSync path {})))
+
+(defn writeFile
+  ([filepath data opts cb]
+   #?(:clj (spit filepath data)))
+
+  ([filepath data]
+   (writeFile filepath data {} nil)
+   )
+  )
