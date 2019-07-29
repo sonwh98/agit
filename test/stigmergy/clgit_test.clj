@@ -7,8 +7,7 @@
 
 (deftest clgit-tests
   (testing "init"
-    (prn  (git/init))
-    (prn  (git/init {:dir "cdr"})))
+    (prn  (git/init {:dir "/tmp/cdr"})))
   )
 
 (deftest io-tests
