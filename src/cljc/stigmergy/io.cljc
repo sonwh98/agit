@@ -2,7 +2,7 @@
   (:require [taoensso.timbre :as log :include-macros true]
             [clojure.core.async :as a :include-macros true]
             [clojure.java.io :as jio]
-            
+            [digest]
             )
   (:import  [java.nio ByteBuffer]))
 
@@ -90,4 +90,5 @@
 
   (.. (java.util.Base64/getEncoder)
       (encodeToString ))
+  (digest/md5 "foo")
   )
