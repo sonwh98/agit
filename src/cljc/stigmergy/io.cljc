@@ -1,9 +1,7 @@
 (ns stigmergy.io
   (:require [taoensso.timbre :as log :include-macros true]
             [clojure.core.async :as a :include-macros true]
-            [clojure.java.io :as jio]
-            [digest]
-            )
+            [clojure.java.io :as jio])
   (:import  [java.nio ByteBuffer]))
 
 
@@ -90,5 +88,7 @@
 
   (.. (java.util.Base64/getEncoder)
       (encodeToString ))
-  (digest/md5 "foo")
+
+  (hash-object "foobar\n")
+  
   )

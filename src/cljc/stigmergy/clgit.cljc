@@ -1,5 +1,6 @@
 (ns stigmergy.clgit
-  (:require [stigmergy.io :as io]))
+  (:require [stigmergy.io :as io]
+            [digest]))
 
 (defn init
   ([{:keys [dir]}]
@@ -29,3 +30,8 @@
    (init {}))
   
   )
+
+(defn hash-object [data]
+  (let [size (count data)
+        s (str "blob " size "\0" data)]
+    (digest/sha1 s)))
