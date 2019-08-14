@@ -1,6 +1,6 @@
 (ns stigmergy.clgit
   (:require [stigmergy.io :as io]
-            [digest]))
+            #_[digest]))
 
 (defn init
   ([{:keys [dir]}]
@@ -31,7 +31,18 @@
   
   )
 
+(defn sha1-bytes [data]
+  (let [md (java.security.MessageDigest/getInstance "SHA-1")
+        data-bytes (.. data getBytes)]
+    (.. md (digest data-bytes))))
+
+(defn sha1-str [data]
+  (let [hash-bytes (sha1-bytes data)
+        hash-str (.. (BigInteger. 1 hash-bytes)
+                     (toString 16))]
+    hash-str))
+
 (defn hash-object [data]
   (let [size (count data)
         s (str "blob " size "\0" data)]
-    (digest/sha1 s)))
+    (sha1-str s)))
