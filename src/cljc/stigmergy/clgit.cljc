@@ -1,7 +1,8 @@
 (ns stigmergy.clgit
   (:require [stigmergy.io :as io]
             #_[digest])
-  (:import  [org.apache.commons.codec.binary Hex]))
+  (:import  [org.apache.commons.codec.binary Hex]
+            [org.apache.commons.codec.digest DigestUtils]))
 
 (defn init
   ([{:keys [dir]}]
@@ -33,27 +34,15 @@
   )
 
 (defn bytes->hex-str [bytes]
-  (.. (BigInteger. 1 bytes)
-      (toString 16)))
+  (Hex/encodeHexString bytes))
 
 (defn hex-str->bytes [hex-str]
-  (Hex/decodeHex hex-str)
-  )
-
-(defn sha1-bytes [data]
-  (let [md (java.security.MessageDigest/getInstance "SHA-1")
-        data-bytes (.. data getBytes)]
-    (.. md (digest data-bytes))))
-
-(defn sha1-str [data]
-  (-> data
-      sha1-bytes
-      bytes->hex-str))
+  (Hex/decodeHex hex-str))
 
 (defn hash-object [data]
   (let [size (count data)
         s (str "blob " size "\0" data)]
-    (sha1-str s)))
+    (.. DigestUtils (sha1Hex s))))
 
 
 (comment
@@ -68,6 +57,9 @@
     (prn "sha2" sha1-bytes2)
     
     )
+  (-> "10"
+      hex-str->bytes
+      bytes->hex-str)
 
   (org.apache.commons.codec.binary.Hex/decodeHex "00A0BF")
   
