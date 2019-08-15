@@ -39,28 +39,55 @@
 (defn hex-str->bytes [hex-str]
   (Hex/decodeHex hex-str))
 
+(defn sha1-as-bytes [data]
+  (DigestUtils/sha1 data))
+
 (defn hash-object [data]
   (let [size (count data)
-        s (str "blob " size "\0" data)]
-    (.. DigestUtils (sha1Hex s))))
+        git-str (str "blob " size "\0" data)]
+    (-> git-str
+        sha1-as-bytes
+        bytes->hex-str)))
 
 
 (comment
-  (let [data "foobar\n"
-        sha1-bytes (sha1-bytes data)
-        sha-str (sha1-str data)
-        sha1-bytes2 (hex-str->byte-array sha-str)]
-    (prn sha-str)
-    (prn (= sha1-bytes
-            sha1-bytes2))
-    (prn "sha1" sha1-bytes)
-    (prn "sha2" sha1-bytes2)
+  (let [data "foobar3\n"
+        sha1 (sha1-as-bytes data)
+        hs (bytes->hex-str sha1)
+        sha2 (hex-str->bytes hs)
+        ]
+    (prn  sha1)
+    (prn sha2)
     
     )
   (-> "10"
       hex-str->bytes
+      bytes->hex-str
+      )
+
+  (let [b (-> "foobar3\n"
+              sha1-as-bytes
+              )
+        h (bytes->hex-str b)
+        b2 (hex-str->bytes h)
+        ]
+    (prn h)
+    (prn b)
+    (prn b2)
+    )
+
+  (-> "9302e9711018ac4d6815617f44ee8cf55a1b6c53"
+      hex-str->bytes
       bytes->hex-str)
 
+  (def b1 (-> "9302e9711018ac4d6815617f44ee8cf55a1b6c53"
+              hex-str->bytes))
+
+  (def b2 (-> "9302e9711018ac4d6815617f44ee8cf55a1b6c53"
+              hex-str->bytes))
+
+  (-> "10" hex-str->bytes)
+  
   (org.apache.commons.codec.binary.Hex/decodeHex "00A0BF")
   
   
