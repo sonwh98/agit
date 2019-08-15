@@ -1,8 +1,9 @@
 (ns stigmergy.clgit
   (:require [stigmergy.io :as io]
-            #_[digest])
-  (:import  [org.apache.commons.codec.binary Hex]
-            [org.apache.commons.codec.digest DigestUtils]))
+            [clojure.java.io :as jio])
+  (:import [java.nio ByteBuffer]
+           [org.apache.commons.codec.binary Hex]
+           [org.apache.commons.codec.digest DigestUtils]))
 
 (defn init
   ([{:keys [dir]}]
@@ -49,48 +50,54 @@
         sha1-as-bytes
         bytes->hex-str)))
 
+(defrecord Entry [ctime-sec
+                  ctime-nsec
+                  mtime-sec
+                  mtime-nsec
+                  dev
+                  ino
+                  mode
+                  uid
+                  gid
+                  size
+                  sha1
+                  name-len
+                  name])
+
+(defn read
+  "read num-of-bytes from input-stream and return as a byte-array"
+  [input-stream num-of-bytes]
+  (let [bytes (byte-array num-of-bytes)]
+    (.. input-stream (read bytes))
+    bytes))
+
+(defn parse-index [index-file]
+  (let [in (-> index-file
+               jio/file 
+               jio/input-stream
+               (java.io.DataInputStream.))
+        sig (let [sig-array (read in 4)]
+              (apply str (map (fn [c]
+                                (char c))
+                              sig-array)))
+        version (.. in (readInt))
+        num-of-entries (.. in (readInt))
+        extension (byte-array 4)
+        ]
+    (prn "sig=" sig)
+    (prn "version=" version)
+    (prn "num=" num-of-entries)
+    (.. in (read extension))
+    (prn "extension=" (first extension))
+    )
+  )
 
 (comment
-  (let [data "foobar3\n"
-        sha1 (sha1-as-bytes data)
-        hs (bytes->hex-str sha1)
-        sha2 (hex-str->bytes hs)
-        ]
-    (prn  sha1)
-    (prn sha2)
-    
-    )
-  (-> "10"
-      hex-str->bytes
-      bytes->hex-str
-      )
+  (parse-index "/tmp/test/.git/index")
 
-  (let [b (-> "foobar3\n"
-              sha1-as-bytes
-              )
-        h (bytes->hex-str b)
-        b2 (hex-str->bytes h)
-        ]
-    (prn h)
-    (prn b)
-    (prn b2)
-    )
+  (.. (java.util.Base64/getEncoder)
+      (encodeToString ))
 
-  (-> "9302e9711018ac4d6815617f44ee8cf55a1b6c53"
-      hex-str->bytes
-      bytes->hex-str)
-
-  (def b1 (-> "9302e9711018ac4d6815617f44ee8cf55a1b6c53"
-              hex-str->bytes))
-
-  (def b2 (-> "9302e9711018ac4d6815617f44ee8cf55a1b6c53"
-              hex-str->bytes))
-
-  (-> "10" hex-str->bytes)
+  (hash-object "foobar\n")
   
-  (org.apache.commons.codec.binary.Hex/decodeHex "00A0BF")
-  
-  
-  (Integer/toString (Integer/parseInt "16" 10) 16)
-  (dec->hex 16)
   )
