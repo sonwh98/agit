@@ -7,7 +7,8 @@
                  [binaryage/devtools "0.9.10"]
                  [org.clojure/core.async "0.4.500"]
                  [com.taoensso/timbre "4.10.0"]
-                 [digest "1.4.9"]]
+                 [digest "1.4.9"]
+                 [commons-codec/commons-codec "1.13"]]
 
   :plugins [[lein-figwheel "0.5.18"]
             [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
