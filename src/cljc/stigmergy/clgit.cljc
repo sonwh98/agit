@@ -91,8 +91,27 @@
     )
   )
 
+(defn parse2 [index-file]
+  (let [file (-> index-file jio/file)
+        file-size (.length file)
+        in (-> file
+               jio/input-stream)
+        bytes (read-bytes in file-size)
+        buffer (buf/allocate file-size)
+        index-spec (buf/spec buf/int32)]
+    (doto buffer
+      (.put bytes))
+
+    (prn "version=" (buf/read buffer index-spec {:offset 4}))
+    
+    )
+  )
+
+
+
 (comment
   (parse-index "/tmp/test/.git/index")
+  (parse2 "/tmp/test/.git/index")
 
   (.. (java.util.Base64/getEncoder)
       (encodeToString ))
@@ -109,7 +128,9 @@
 
   (def point-spec (reify
                     spec/ISpecSize
-                    (size [_] 8)
+                    (size [_]
+                      (prn "_=" _)
+                      8)
 
                     spec/ISpec
                     (read [_ buff pos]
@@ -124,7 +145,15 @@
                         (+ written written')))))
 
   (def my-point (Point. 1 2))
+
   (buf/write! buffer my-point point-spec)
   (buf/read* buffer point-spec)
+  (buf/size point-spec)
+
+  (-> "/tmp/test/.git/index"
+      jio/file
+      (.length)
+      )
+
   
   )
