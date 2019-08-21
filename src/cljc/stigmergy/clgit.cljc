@@ -2,7 +2,8 @@
   (:require [stigmergy.io :as io]
             [clojure.java.io :as jio]
             [octet.core :as buf]
-            [octet.spec :as spec])
+            [octet.spec :as spec]
+            [octet.util :as outil])
   (:import [java.nio ByteBuffer]
            [org.apache.commons.codec.binary Hex]
            [org.apache.commons.codec.digest DigestUtils]))
@@ -74,35 +75,32 @@
     bytes))
 
 (defn parse-index [index-file]
-  (let [in (-> index-file
-               jio/file 
-               jio/input-stream
-               (java.io.DataInputStream.))
-        sig (let [sig-array (read-bytes in 4)]
-              (apply str (map (fn [c]
-                                (char c))
-                              sig-array)))
-        version (.. in (readInt))
-        num-of-entries (.. in (readInt))]
-    (prn "sig=" sig)
-    (prn "version=" version)
-    (prn "num=" num-of-entries)
-    
-    )
-  )
-
-(defn parse2 [index-file]
   (let [file (-> index-file jio/file)
         file-size (.length file)
         in (-> file
                jio/input-stream)
         bytes (read-bytes in file-size)
         buffer (buf/allocate file-size)
-        index-spec (buf/spec buf/int32)]
+        sig-spec (buf/spec buf/byte buf/byte  buf/byte  buf/byte)
+        version-spec (buf/spec buf/byte  buf/byte  buf/byte  buf/byte)
+        num-entry-spec (buf/spec buf/int32)
+        header-spec (buf/spec sig-spec version-spec num-entry-spec)]
     (doto buffer
       (.put bytes))
-
-    (prn "version=" (buf/read buffer index-spec {:offset 4}))
+    
+    (let [header (buf/read buffer header-spec)
+          sig (let [sig-bytes (nth header 0)
+                    sig-chars (map outil/byte->ascii sig-bytes)]
+                (clojure.string/join "" sig-chars))
+          version (nth header 1)
+          num-of-entries (nth header 2)]
+      (assert (= "DIRC" sig) "Not Git index file because signature is not DIRC")
+      (prn "sig=" sig)
+      
+      (prn "header=" header)
+      (prn "version=" version)
+      (prn "entries=" num-of-entries)
+      )
     
     )
   )
@@ -111,7 +109,7 @@
 
 (comment
   (parse-index "/tmp/test/.git/index")
-  (parse2 "/tmp/test/.git/index")
+
 
   (.. (java.util.Base64/getEncoder)
       (encodeToString ))
