@@ -1,6 +1,6 @@
 (defproject  stigmergy/clgit "0.0.1-SNAPSHOT"
   :min-lein-version "2.8.3" 
-  :dependencies [[org.clojure/clojure "1.10.0"]  
+  :dependencies [[org.clojure/clojure "1.10.1"]  
                  [org.clojure/clojurescript "1.10.520"]
                  [stigmergy/tily "0.1.8-SNAPSHOT"]
                  [org.clojure/core.async "0.4.490"]
@@ -8,7 +8,9 @@
                  [org.clojure/core.async "0.4.500"]
                  [com.taoensso/timbre "4.10.0"]
                  [digest "1.4.9"]
-                 [commons-codec/commons-codec "1.13"]]
+                 [commons-codec/commons-codec "1.13"]
+                 [funcool/octet "1.1.2"]
+                 ]
 
   :plugins [[lein-figwheel "0.5.18"]
             [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
