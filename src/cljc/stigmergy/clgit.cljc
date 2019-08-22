@@ -77,30 +77,65 @@
 (defn parse-index [index-file]
   (let [file (-> index-file jio/file)
         file-size (.length file)
-        in (-> file
-               jio/input-stream)
+        in (-> file jio/input-stream)
         bytes (read-bytes in file-size)
         buffer (buf/allocate file-size)
         sig-spec (buf/spec buf/byte buf/byte  buf/byte  buf/byte)
         version-spec (buf/spec buf/byte  buf/byte  buf/byte  buf/byte)
         num-entry-spec (buf/spec buf/int32)
-        header-spec (buf/spec sig-spec version-spec num-entry-spec)]
+
+        ctime-sec buf/int32
+        ctime-nano-sec buf/int32
+        mtime-sec buf/int32
+        mtime-nano-sec buf/int32
+        dev buf/int32
+        inode buf/int32
+        mode buf/int32
+        uid buf/int32
+        gid buf/int32
+        file-size buf/int32
+        sha (buf/spec buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32
+                      buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32
+                      buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32)
+
+        entry-spec (buf/spec ctime-sec ctime-nano-sec mtime-sec mtime-nano-sec dev inode
+                             mode uid gid file-size #_sha)
+        
+        header-spec (buf/spec sig-spec version-spec num-entry-spec)
+        index-spec (buf/spec header-spec entry-spec)]
     (doto buffer
       (.put bytes))
-    
-    (let [header (buf/read buffer header-spec)
-          sig (let [sig-bytes (nth header 0)
-                    sig-chars (map outil/byte->ascii sig-bytes)]
-                (clojure.string/join "" sig-chars))
-          version (nth header 1)
-          num-of-entries (nth header 2)]
-      (assert (= "DIRC" sig) "Not Git index file because signature is not DIRC")
-      (prn "sig=" sig)
-      
-      (prn "header=" header)
-      (prn "version=" version)
-      (prn "entries=" num-of-entries)
+    (doseq [b bytes]
+      (print b " ")
       )
+
+    (prn "----")
+    
+    (let [index (buf/read buffer index-spec)
+          [header entries] index]
+
+      (prn index)
+      
+      (prn "count=" (count index))
+      (prn "header=" header)
+      (prn "entries=" entries)
+
+      (prn (count header) (count entries))
+      )
+    #_(let [header (buf/read buffer header-spec)
+            sig (let [sig-bytes (nth header 0)
+                      sig-chars (map outil/byte->ascii sig-bytes)]
+                  (clojure.string/join "" sig-chars))
+            version (nth header 1)
+            num-of-entries (first (nth header 2))]
+        (assert (= "DIRC" sig) "Not Git index file because signature is not DIRC")
+        (prn "sig=" sig)
+        (prn "header=" header)
+        (prn "version=" version)
+        (prn "entries=" num-of-entries)
+
+        (prn "foo=" (buf/read buffer index-spec))
+        )
     
     )
   )
@@ -148,10 +183,15 @@
   (buf/read* buffer point-spec)
   (buf/size point-spec)
 
+
   (-> "/tmp/test/.git/index"
       jio/file
       (.length)
       )
 
-  
+  (def index [68 73  82  67  0  0  0  2  0  0  0  1  93  93  89  105  20  -102  88  103  93  93  89  105  20  -102  88  103  0  0  8  2  0  96  0  -3  0  0  -127  -92  0  0  3  -24  0  0  3  -24  0  0  0  7  50  63  -82  3  -12  96  110  -87  -103  29  -8  -66  -5  -78  -4  -89  -107  -26  72  -6  0  7  102  111  111  46  116  120  116  0  0  0  3  45  -95  48  37  -116  -74  -20  84  6  99  106  -57  76  -13  5  1  -16  114  -77])
+
+  (def entry (take 64 (drop 12 index)))
+  (def sha1 (vec (drop-last 2 (drop 40 entry))))
+  (outil/bytes->hex sha1)
   )
