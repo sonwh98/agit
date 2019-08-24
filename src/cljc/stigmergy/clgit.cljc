@@ -3,10 +3,11 @@
             [clojure.java.io :as jio]
             [octet.core :as buf]
             [octet.spec :as spec]
-            [octet.util :as outil])
+            [octet.util :as outil]
+            [stigmergy.voodoo :as vd])
   (:import [java.nio ByteBuffer]
            [org.apache.commons.codec.binary Hex]
-           [org.apache.commons.codec.digest DigestUtils]))
+           [org.apache.commons.codec.digest DigestUtils])  )
 
 (defn init
   ([{:keys [dir]}]
@@ -37,21 +38,12 @@
   
   )
 
-(defn bytes->hex-str [bytes]
-  (Hex/encodeHexString bytes))
-
-(defn hex-str->bytes [hex-str]
-  (Hex/decodeHex hex-str))
-
-(defn sha1-as-bytes [data]
-  (DigestUtils/sha1 data))
-
 (defn hash-object [data]
   (let [size (count data)
         git-str (str "blob " size "\0" data)]
     (-> git-str
-        sha1-as-bytes
-        bytes->hex-str)))
+        vd/sha1-as-bytes
+        vd/bytes->hex-str)))
 
 (defrecord Entry [ctime-sec
                   ctime-nsec
@@ -67,38 +59,6 @@
                   name-len
                   name])
 
-(defn read-bytes
-  "read num-of-bytes from input-stream and return as a byte-array"
-  [input-stream num-of-bytes]
-  (let [bytes (byte-array num-of-bytes)]
-    (.. input-stream (read bytes))
-    bytes))
-
-(defn sniff
-  "like slurp but returns raw bytes"
-  [file-name]
-  (let [paths (rest (clojure.string/split file-name #"/"))
-        root-dir (str "/" (first paths))
-        path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
-    (java.nio.file.Files/readAllBytes path)))
-
-(defn bytes->int [bytes]
-  (let [base 10
-        bytes (reverse bytes)]
-    (reduce + (map-indexed (fn [index b]
-                             (int (* (Math/pow base index) b)))
-                           bytes))))
-
-(defn bytes->str [bytes]
-  (clojure.string/join "" (map (fn [c]
-                                 (char (max 0, c)))
-                               bytes)))
-
-(defn take-between [i j coll]
-  (let [chunk (drop i coll)
-        num (- j i)]
-    (take num chunk)))
-
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
         target (+ (* (inc floor) 8)
@@ -106,32 +66,30 @@
     (- target n)))
 
 (defn parse-index [index-file]
-  (let [file-bytes (sniff index-file)
+  (let [file-bytes (vd/sniff index-file)
         header-size 12
-        header (take-between 0 header-size file-bytes)
-        num-of-entries  (bytes->int (take-last 4 header))
+        header (vd/take-between 0 header-size file-bytes)
+        num-of-entries  (vd/bytes->int (take-last 4 header))
         entry-pt (atom header-size)]
 
     (doseq [i (range num-of-entries)
             :let [sha-start (+ @entry-pt (* 4 10))
                   sha-end (+ sha-start 20)
-                  sha1 (take-between  sha-start sha-end
-                                      file-bytes)
+                  sha1 (vd/take-between  sha-start sha-end
+                                         file-bytes)
                   name-len-start sha-end
                   name-len-end (+ name-len-start 2)
-                  name-len (take-between name-len-start name-len-end file-bytes)
-                  name-len (bytes->int name-len)
+                  name-len (vd/take-between name-len-start name-len-end file-bytes)
+                  name-len (vd/bytes->int name-len)
                   name-start name-len-end
                   name-end (+ name-start name-len)
-                  name (take-between name-start name-end file-bytes)
-                  name (bytes->str name)]
-            ]
+                  name (vd/take-between name-start name-end file-bytes)
+                  name (vd/bytes->str name)]]
       (prn (outil/bytes->hex sha1) name)
-      (reset! entry-pt (+ name-end (padding name-len)))
-      )))
+      (reset! entry-pt (+ name-end (padding name-len))))))
 
 (comment
-  (parse-index "/tmp/test2/.git/index")
+  (parse-index "/tmp/test/.git/index")
 
 
   (def index (sniff "/tmp/test/.git/index"))
