@@ -74,7 +74,9 @@
     (.. input-stream (read bytes))
     bytes))
 
-(defn sniff [file-name]
+(defn sniff
+  "like slurp but returns raw bytes"
+  [file-name]
   (let [paths (rest (clojure.string/split file-name #"/"))
         root-dir (str "/" (first paths))
         path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
@@ -92,114 +94,10 @@
                                  (char (max 0, c)))
                                bytes)))
 
-(defn parse-index [index-file]
-  (let [file (-> index-file jio/file)
-        file-size (.length file)
-        in (-> file jio/input-stream)
-        bytes (read-bytes in file-size)
-        buffer (buf/allocate file-size)
-        sig-spec (buf/spec buf/byte buf/byte  buf/byte  buf/byte)
-        version-spec (buf/spec buf/byte  buf/byte  buf/byte  buf/byte)
-        num-entry-spec (buf/spec buf/int32)
-
-        ctime-sec buf/int32
-        ctime-nano-sec buf/int32
-        mtime-sec buf/int32
-        mtime-nano-sec buf/int32
-        dev buf/int32
-        inode buf/int32
-        mode buf/int32
-        uid buf/int32
-        gid buf/int32
-        file-size buf/int32
-        sha (buf/spec buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32
-                      buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32
-                      buf/int32 buf/int32 buf/int32 buf/int32 buf/int32 buf/int32)
-
-        entry-spec (buf/spec ctime-sec ctime-nano-sec mtime-sec mtime-nano-sec dev inode
-                             mode uid gid file-size #_sha)
-        
-        header-spec (buf/spec sig-spec version-spec num-entry-spec)
-        index-spec (buf/spec header-spec entry-spec)]
-    (doto buffer
-      (.put bytes))
-    (pr "bytes=" (seq bytes))
-
-
-    (prn "----")
-    
-    (let [index (buf/read buffer index-spec)
-          [header entries] index]
-
-      (prn index)
-      
-      (prn "count=" (count index))
-      (prn "header=" header)
-      (prn "entries=" entries)
-
-      (prn (count header) (count entries))
-      )
-    #_(let [header (buf/read buffer header-spec)
-            sig (let [sig-bytes (nth header 0)
-                      sig-chars (map outil/byte->ascii sig-bytes)]
-                  (clojure.string/join "" sig-chars))
-            version (nth header 1)
-            num-of-entries (first (nth header 2))]
-        (assert (= "DIRC" sig) "Not Git index file because signature is not DIRC")
-        (prn "sig=" sig)
-        (prn "header=" header)
-        (prn "version=" version)
-        (prn "entries=" num-of-entries)
-
-        (prn "foo=" (buf/read buffer index-spec))
-        )
-    )
-  )
-
 (defn take-between [i j coll]
   (let [chunk (drop i coll)
         num (- j i)]
     (take num chunk)))
-
-(defn parse [index-file]
-  (let [file-bytes (sniff index-file)
-        sig-spec (buf/spec buf/byte buf/byte  buf/byte  buf/byte)
-        version-spec (buf/spec buf/byte  buf/byte  buf/byte  buf/byte)
-        num-entry-spec (buf/spec buf/int32)
-        header-spec (buf/spec sig-spec version-spec num-entry-spec)
-
-        ctime-sec buf/int32
-        ctime-nano-sec buf/int32
-        mtime-sec buf/int32
-        mtime-nano-sec buf/int32
-        dev buf/int32
-        inode buf/int32
-        mode buf/int32
-        uid buf/int32
-        gid buf/int32
-        file-size buf/int32
-        sha-spec (buf/bytes 20)
-        name-length buf/byte
-        entry-spec (buf/spec ctime-sec ctime-nano-sec mtime-sec mtime-nano-sec dev inode
-                             mode uid gid file-size sha-spec name-length)
-
-        buffer (buf/allocate (count file-bytes))
-        ]
-    (doto buffer
-      (.put file-bytes))
-    (let [[sig version num-of-entries]  (buf/read buffer header-spec)
-          sig (clojure.string/join "" (map char sig))
-          version (bytes->int version)
-          num-of-entries (bytes->int num-of-entries)]
-      (assert (= "DIRC" sig) (str sig " is an invalid signature. Must be DIRC"))
-      
-      (prn sig)
-      (prn version)
-      (prn num-of-entries)
-
-      )
-    )
-  )
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
@@ -207,7 +105,7 @@
                   2)]
     (- target n)))
 
-(defn parse3 [index-file]
+(defn parse-index [index-file]
   (let [file-bytes (sniff index-file)
         header-size 12
         header (take-between 0 header-size file-bytes)
@@ -229,16 +127,12 @@
                   name (bytes->str name)]
             ]
       (prn (outil/bytes->hex sha1) name)
-
       (reset! entry-pt (+ name-end (padding name-len)))
-      )
-    
-    )
-  )
+      )))
+
 (comment
-  (parse-index "/tmp/test/.git/index")
-  (parse "/tmp/test/.git/index")
-  (parse3 "/tmp/test/.git/index")
+  (parse-index "/tmp/test2/.git/index")
+
 
   (def index (sniff "/tmp/test/.git/index"))
 
