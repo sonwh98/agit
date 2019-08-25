@@ -35,7 +35,7 @@
 
 (defn sizeof [t] {:pre [(or (vector? t) (keyword? t))]}
   (let [type->size {:byte 1
-                    :bytes* 0
+                    :byte* 0
 
                     :char 1
                     :char* 0
@@ -58,33 +58,37 @@
       :else (let [[seq-type count] t]
               (* (sizeof seq-type) count)))))
 
-(defn pointer [struct data]
+(defn struct-metadata [struct]
   (let [field-type-pairs (partition 2 struct)
-        field-size-pairs (map (fn [[field type]]
-                                [field (sizeof type)])
-                              field-type-pairs)
-        field->type (into {} (map vec field-type-pairs))
-        field->size (into {} field-size-pairs)
-        field->offset (into {} (reduce (fn [acc [field size]]
-                                         (let [[last-field last-offset] (last acc)]
-                                           (conj acc (if last-offset
-                                                       (let [size (sizeof (field->type last-field))
-                                                             offset (+ last-offset size)]
-                                                         [field offset])
-                                                       [field 0]))))
-                                       []
-                                       field-size-pairs))
-        type->fn {:int16 bytes->int
+        field-type-size (map (fn [[field type]]
+                               [field {:type type
+                                       :size (sizeof type)}])
+                             field-type-pairs)
+        field-type-size-offset (into {} (reduce (fn [acc [field md]]
+                                                  (let [[last-field last-md] (last acc)
+                                                        last-offset (:offset last-md)]
+                                                    (conj acc (if last-offset
+                                                                (let [size (:size last-md)
+                                                                      offset (+ last-offset size)]
+                                                                  [field (assoc md :offset offset)])
+                                                                [field (assoc md :offset 0)]))))
+                                                []
+                                                field-type-size))]
+    field-type-size-offset))
+
+(defn pointer [struct data]
+  (let [type->fn {:int16 bytes->int
                   :int32 bytes->int
                   :char char
                   :boolean boolean}
+        md (struct-metadata struct)
         counter (atom 0)]
     (fn [arg0 & args]
       (if (-> args count zero?)
         (let [field arg0
-              field-type (field->type field)
-              field-offset (field->offset field)
-              size (sizeof field-type)
+              field-type (-> md field :type)
+              field-offset (-> md field :offset)
+              size (-> md field :size)
               chunk (if (= size 0)
                       (let [size (count data)]
                         (take-between field-offset size data))
