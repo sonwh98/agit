@@ -31,7 +31,8 @@
   (DigestUtils/sha1 data))
 
 (defn sizeof [t] {:pre [(or (vector? t) (keyword? t))]}
-  (let [size-map {:char 1
+  (let [size-map {:byte 1
+                  :char 1
                   :int16 2
                   :int32 4
                   :boolean 1}]
@@ -43,6 +44,9 @@
 (defn pointer [data schema]
   (let [pairs (partition 2 schema)
         field->type (into {} (map vec pairs))
+        field->size (into {} (map (fn [[field type]]
+                                    [field (sizeof type)])
+                                  pairs))
         field->offset (into {} (reduce (fn [acc [field size]]
                                          (let [[last-field last-offset] (last acc)]
                                            (conj acc (if last-offset
@@ -57,21 +61,29 @@
         type->fn {:int16 bytes->int
                   :int32 bytes->int
                   :char char
-                  :boolean boolean}]
-    (fn [field]
-      (let [field-type (field->type field)
-            offset (field->offset field)
-            size (sizeof field-type)
-            data-block (take-between offset (+ offset size) data)]
-        (if (vector? field-type)
-          (let [[type count] field-type]
-            (map (fn [byte]
-                   (let [coerce-fn (type->fn type)]
-                     (coerce-fn byte)))
-                 data-block))
-          (let [coerce-fn (type->fn field-type)]
-            (coerce-fn data-block))
-          )))))
+                  :boolean boolean}
+        counter (atom 0)]
+
+    (prn field->size)
+    (fn [arg0 & args]
+      (if (-> args count zero?)
+        (let [field arg0
+              field-type (field->type field)
+              offset (field->offset field)
+              size (sizeof field-type)
+              data-block (take-between offset (+ offset size) data)]
+          (prn "counter=" @counter)
+          (if (vector? field-type)
+            (let [[type count] field-type]
+              (map (fn [byte]
+                     (let [coerce-fn (type->fn type)]
+                       (coerce-fn byte)))
+                   data-block))
+            (let [coerce-fn (type->fn field-type)]
+              (coerce-fn data-block))))
+        (let [op arg0
+              a-num (first args)]
+          (swap! counter op a-num))))))
 
 
 (defn read-bytes
