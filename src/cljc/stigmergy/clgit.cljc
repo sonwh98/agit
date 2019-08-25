@@ -94,7 +94,7 @@
                 :version :int32
                 :entry-count :int32
                 :entries :bytes]
-        pt (vd/pointer data header)]
+        pt (vd/pointer header data)]
 
     (pt :entry-count)
     )
@@ -109,8 +109,10 @@
                 :version :int32
                 :entry-count :int32
                 :entries :bytes*]
-        pt (vd/pointer data header)]
-    (pt :entry-count)
-    (vd/sizeof header)
+        pt (vd/pointer header data)]
+    (pt :entries)
+
     )
+
+  (vd/take-between 12 255 (vd/sniff "/tmp/test/.git/index"))
   )

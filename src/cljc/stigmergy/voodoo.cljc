@@ -58,7 +58,7 @@
       :else (let [[seq-type count] t]
               (* (sizeof seq-type) count)))))
 
-(defn pointer [data struct]
+(defn pointer [struct data]
   (let [field-type-pairs (partition 2 struct)
         field-size-pairs (map (fn [[field type]]
                                 [field (sizeof type)])
