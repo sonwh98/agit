@@ -57,14 +57,11 @@
                                                        [field 0]))))
                                        []
                                        field-size-pairs))
-
         type->fn {:int16 bytes->int
                   :int32 bytes->int
                   :char char
                   :boolean boolean}
         counter (atom 0)]
-
-    (prn field->size)
     (fn [arg0 & args]
       (if (-> args count zero?)
         (let [field arg0
@@ -72,7 +69,6 @@
               offset (field->offset field)
               size (sizeof field-type)
               data-block (take-between offset (+ offset size) data)]
-          (prn "counter=" @counter)
           (if (vector? field-type)
             (let [[type count] field-type]
               (map (fn [byte]
