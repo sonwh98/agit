@@ -85,15 +85,15 @@
               field-type (field->type field)
               field-offset (field->offset field)
               size (sizeof field-type)
-              data-block (take-between field-offset (+ field-offset size) data)]
+              chunk (take-between field-offset (+ field-offset size) data)]
           (if (vector? field-type)
             (let [[type count] field-type]
               (map (fn [byte]
                      (let [coerce-fn (type->fn type)]
                        (coerce-fn byte)))
-                   data-block))
+                   chunk))
             (let [coerce-fn (type->fn field-type)]
-              (coerce-fn data-block))))
+              (coerce-fn chunk))))
         (let [op arg0
               a-num (first args)
               size (* a-num (sizeof struct))]
