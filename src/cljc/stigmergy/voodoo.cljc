@@ -31,13 +31,13 @@
   (DigestUtils/sha1 data))
 
 (defn sizeof [t] {:pre [(or (vector? t) (keyword? t))]}
-  (let [size-map {:byte 1
-                  :char 1
-                  :int16 2
-                  :int32 4
-                  :boolean 1}]
+  (let [type->size {:byte 1
+                    :char 1
+                    :int16 2
+                    :int32 4
+                    :boolean 1}]
     (if (keyword? t)
-      (t size-map)
+      (type->size t)
       (let [[seq-type count] t]
         (* (sizeof seq-type) count)))))
 
