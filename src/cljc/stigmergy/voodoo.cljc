@@ -30,16 +30,23 @@
 (defn sha1-as-bytes [data]
   (DigestUtils/sha1 data))
 
+(defn struct? [struct]
+  (and (vector? struct) (> (count struct) 2 )))
+
 (defn sizeof [t] {:pre [(or (vector? t) (keyword? t))]}
   (let [type->size {:byte 1
                     :char 1
                     :int16 2
                     :int32 4
                     :boolean 1}]
-    (if (keyword? t)
-      (type->size t)
-      (let [[seq-type count] t]
-        (* (sizeof seq-type) count)))))
+    (cond
+      (keyword? t) (type->size t)
+      (struct? t) (let [field-type-pairs (partition 2 t)]
+                    (reduce + (map (fn [[field type]]
+                                     (sizeof type))
+                                   field-type-pairs)))
+      :else (let [[seq-type count] t]
+              (* (sizeof seq-type) count)))))
 
 (defn pointer [data struct]
   (let [field-type-pairs (partition 2 struct)
