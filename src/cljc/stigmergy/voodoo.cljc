@@ -42,11 +42,12 @@
         (* (sizeof seq-type) count)))))
 
 (defn pointer [data schema]
-  (let [pairs (partition 2 schema)
-        field->type (into {} (map vec pairs))
-        field->size (into {} (map (fn [[field type]]
-                                    [field (sizeof type)])
-                                  pairs))
+  (let [field-type-pairs (partition 2 schema)
+        field-size-pairs (map (fn [[field type]]
+                                [field (sizeof type)])
+                              field-type-pairs)
+        field->type (into {} (map vec field-type-pairs))
+        field->size (into {} field-size-pairs)
         field->offset (into {} (reduce (fn [acc [field size]]
                                          (let [[last-field last-offset] (last acc)]
                                            (conj acc (if last-offset
@@ -55,9 +56,8 @@
                                                          [field offset])
                                                        [field 0]))))
                                        []
-                                       (map (fn [[field type]]
-                                              [field (sizeof type)])
-                                            pairs)))
+                                       field-size-pairs))
+
         type->fn {:int16 bytes->int
                   :int32 bytes->int
                   :char char
