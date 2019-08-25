@@ -85,8 +85,9 @@
             (let [coerce-fn (type->fn field-type)]
               (coerce-fn data-block))))
         (let [op arg0
-              a-num (first args)]
-          (swap! counter op a-num))))))
+              a-num (first args)
+              size (* a-num (sizeof struct))]
+          (swap! counter op size))))))
 
 
 (defn read-bytes
