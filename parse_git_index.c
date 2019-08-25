@@ -43,6 +43,19 @@ struct index_header {
     unsigned int entries;
 };
 
+struct foo{
+  char namelen;
+  char name[1];
+};
+  
+/*
+index_header=12
+cache_entry=64
+unsigned int=4
+char=1
+char name[1]=8
+ */
+  
 static inline unsigned int default_swab32(unsigned int val)
 {
 	return (((val & 0xff000000) >> 24) |
@@ -122,6 +135,13 @@ int main(int argc, char **argv)
     map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 
     hdr = map;
+    printf("index_header=%lu\n", sizeof(struct index_header));
+    printf("cache_entry=%lu\n", sizeof(struct cache_entry));
+    printf("unsigned int=%lu\n", sizeof(unsigned int));
+    printf("char=%lu\n", sizeof(char));
+    printf("char name[1]=%lu\n", sizeof(char *));
+    printf("foo=%lu\n", sizeof(struct foo));
+    
     ce = (struct cache_entry *)(hdr + 1);
 
     count_entries = bswap32(hdr->entries);
@@ -134,6 +154,7 @@ int main(int argc, char **argv)
              );
 
       /* printf("%d %s %s\n", ce->namelen, ce->name, ce->sha1); */
+      printf("cal(%d)=%d\n", ce->namelen, calc_padding(ce->namelen));
       p_next_entry = ce->name + ce->namelen + calc_padding(ce->namelen);
       ce = (struct cache_entry *)p_next_entry;
     }

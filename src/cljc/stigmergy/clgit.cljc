@@ -88,6 +88,18 @@
       (prn (outil/bytes->hex sha1) name)
       (reset! entry-pt (+ name-end (padding name-len))))))
 
+(defn parse [index-file]
+  (let [data (vd/sniff index-file)
+        header [:signature [:char 4]
+                :version :int32
+                :entry-count :int32
+                :entries :bytes]
+        pt (vd/pointer data header)]
+
+    (pt :entry-count)
+    )
+  )
+
 (comment
   (parse-index "/tmp/test/.git/index")
 
@@ -97,7 +109,6 @@
                 :version :int32
                 :entry-count :int32]
         pt (vd/pointer data header)]
-
-    (pt :entry-count)
+    (pt :signature)
     )
   )

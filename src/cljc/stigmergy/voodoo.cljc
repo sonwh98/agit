@@ -41,8 +41,8 @@
       (let [[seq-type count] t]
         (* (sizeof seq-type) count)))))
 
-(defn pointer [data schema]
-  (let [field-type-pairs (partition 2 schema)
+(defn pointer [data struct]
+  (let [field-type-pairs (partition 2 struct)
         field-size-pairs (map (fn [[field type]]
                                 [field (sizeof type)])
                               field-type-pairs)
