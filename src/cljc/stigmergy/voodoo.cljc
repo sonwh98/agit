@@ -38,13 +38,14 @@
                     :char 1
                     :int16 2
                     :int32 4
-                    :boolean 1}]
+                    :boolean 1
+                    :bytes* 0}]
     (cond
       (keyword? t) (type->size t)
       (struct? t) (let [field-type-pairs (partition 2 t)]
-                    (reduce + (map (fn [[field type]]
-                                     (sizeof type))
-                                   field-type-pairs)))
+                    (reduce + (map-indexed (fn [index [field type]]
+                                             (sizeof type))
+                                           field-type-pairs)))
       :else (let [[seq-type count] t]
               (* (sizeof seq-type) count)))))
 
