@@ -83,9 +83,9 @@
       (if (-> args count zero?)
         (let [field arg0
               field-type (field->type field)
-              offset (field->offset field)
+              field-offset (field->offset field)
               size (sizeof field-type)
-              data-block (take-between offset (+ offset size) data)]
+              data-block (take-between field-offset (+ field-offset size) data)]
           (if (vector? field-type)
             (let [[type count] field-type]
               (map (fn [byte]
