@@ -107,8 +107,10 @@
   (let [data (vd/sniff "/tmp/test/.git/index")
         header [:signature [:char 4]
                 :version :int32
-                :entry-count :int32]
+                :entry-count :int32
+                :entries :bytes*]
         pt (vd/pointer data header)]
-    (pt :signature)
+    (pt :entry-count)
+    (vd/sizeof header)
     )
   )

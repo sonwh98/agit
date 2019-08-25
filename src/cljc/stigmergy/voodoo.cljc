@@ -35,11 +35,20 @@
 
 (defn sizeof [t] {:pre [(or (vector? t) (keyword? t))]}
   (let [type->size {:byte 1
+                    :bytes* 0
+
                     :char 1
+                    :char* 0
+                    
                     :int16 2
+                    :int16* 0
+                    
                     :int32 4
+                    :int32* 0
+                    
                     :boolean 1
-                    :bytes* 0}]
+                    :boolean* 0
+                    }]
     (cond
       (keyword? t) (type->size t)
       (struct? t) (let [field-type-pairs (partition 2 t)]
