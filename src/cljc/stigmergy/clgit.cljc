@@ -91,44 +91,13 @@
 (comment
   (parse-index "/tmp/test/.git/index")
 
-
-  (def index (sniff "/tmp/test/.git/index"))
-
-  (def header-size 12)
-  (def entry-size 64)
-
-  (def header (take header-size index))
   
-  (def entry (take entry-size (drop header-size index)))
-  (def sha-start 40)
-  (def sha1 (vec (drop-last 4 (drop sha-start entry))))
+  (let [data (vd/sniff "/tmp/test/.git/index")
+        header [:signature [:char 4]
+                :version :int32
+                :entry-count :int32]
+        pt (vd/pointer data header)]
 
-  (outil/bytes->hex sha1)
-  (def foo (drop sha-start entry))
-
-  (def last-4 (vec (take-last 4 (drop sha-start entry))))
-
-
-  (def index2 (sniff "/tmp/test2/.git/index"))
-
-  (def entries (drop header-size  index2))
-  (def entry (take entry-size entries))
-  (def file-size-start (* 9 4))
-  (def file-size (vec (take 4 (drop file-size-start entry))))
-  (def sha-start 40)
-  (def sha1-size 20)
-  (def sha1 (vec (take sha1-size (drop sha-start entry))))
-
-  (def len-name (drop (+ sha-start sha1-size) entry))
-  (outil/bytes->hex sha1)
-  (map char (take-between 74 81 index2))
-  (take-between (- sha-start 4) (inc sha-start) entry)
-  
-  (outil/bytes->hex (take-between 52 (+ 52 20) index2))
-  (take-between (+ 53 20) (+ 53 21) index2)
-  
-  
-
-  
-
+    (pt :entry-count)
+    )
   )
