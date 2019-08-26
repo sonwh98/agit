@@ -4,8 +4,20 @@
            #_[clojure.lang IAtom IDeref IRef]
            ))
 
+(defn bytes->num [bytes base]
+  (reduce + (map-indexed (fn [index b]
+                           (int (* (Math/pow base index) b)))
+                         bytes)))
+
 (defn bytes->int [bytes]
-  (let [base 10
+  (let [bytes (reverse bytes)]
+    (+  (bit-shift-left (nth bytes 0) 24)
+        (bit-shift-left (nth  bytes 1) 16)
+        (bit-shift-left (nth  bytes 2) 8)
+        (bit-shift-left (nth  bytes 3) 0))))
+
+(defn bytes->oct [bytes]
+  (let [base 8
         bytes (reverse bytes)]
     (reduce + (map-indexed (fn [index b]
                              (int (* (Math/pow base index) b)))
@@ -80,9 +92,10 @@
   (let [type->fn {:int16 bytes->int
                   :int32 bytes->int
                   :char char
-                  :boolean boolean}
+                  :boolean boolean
+                  :byte byte}
         md (struct-metadata struct)
-        counter (atom 0)]
+        offset (atom 0)]
     (fn [arg0 & args]
       (if (-> args count zero?)
         (let [field arg0
@@ -91,8 +104,9 @@
               size (-> md field :size)
               chunk (if (= size 0)
                       (let [size (count data)]
-                        (take-between field-offset size data))
-                      (take-between field-offset (+ field-offset size) data))]
+                        (take-between (+ @offset field-offset) size data))
+                      (take-between (+ @offset field-offset) (+ @offset field-offset size) data))]
+          
           (if (vector? field-type)
             (let [[type count] field-type]
               (map (fn [byte]
@@ -103,10 +117,10 @@
               (if coerce-fn
                 (coerce-fn chunk)
                 chunk))))
-        (let [op arg0
+        (let [+or- arg0
               a-num (first args)
               size (* a-num (sizeof struct))]
-          (swap! counter op size))))))
+          (swap! offset +or- size))))))
 
 
 (defn read-bytes
@@ -119,8 +133,37 @@
 (defn sniff
   "like slurp but returns raw bytes"
   [file-name]
-  (let [paths (rest (clojure.string/split file-name #"/"))
-        root-dir (str "/" (first paths))
+  (let [paths (clojure.string/split file-name #"/")
+        root-dir (let [fp (first paths)]
+                   (if (= "" fp)
+                     "/"
+                     fp))
         path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
     (java.nio.file.Files/readAllBytes path)))
 
+
+(comment
+  
+  (let [data (sniff "/home/sto/workspace/clgit/person.dat")
+        person [:id :int32
+                :fname [:char 20]
+                :lname [:char 20]]
+        pt (pointer person data)]
+    (doseq [i (range 3)]
+      (prn "id=" (pt :id))
+      (prn "fname=" (pt :fname))
+      (prn "lname=" (pt :lname))
+      (pt + 1))
+    )
+  
+
+  (let [data (sniff "/home/sto/workspace/clgit/integers")
+        in (-> data
+               (java.io.ByteArrayInputStream.)
+               (java.io.DataInputStream.))
+        ]
+    (prn (seq data))
+    (prn (.. in (readInt)))
+    )
+
+  )
