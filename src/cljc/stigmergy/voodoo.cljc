@@ -4,29 +4,36 @@
            #_[clojure.lang IAtom IDeref IRef]
            ))
 
+(defn toBytes [block]
+  (cond
+    (sequential? block) (byte-array block)
+    (bytes? block) block
+    :else [block]))
+
 (defn bytes->num [bytes base]
   (reduce + (map-indexed (fn [index b]
                            (int (* (Math/pow base index) b)))
                          bytes)))
 
-(defn bytes->int [bytes]
-  (let [bytes (reverse bytes)]
-    (+  (bit-shift-left (nth bytes 0) 24)
-        (bit-shift-left (nth  bytes 1) 16)
-        (bit-shift-left (nth  bytes 2) 8)
-        (bit-shift-left (nth  bytes 3) 0))))
+(defn bytes->int [block]
+  (.. (BigInteger. (toBytes block))
+      intValue)
+  
+  #_(let []
+      (+  (bit-shift-left (nth bytes 0) 24)
+          (bit-shift-left (nth  bytes 1) 16)
+          (bit-shift-left (nth  bytes 2) 8)
+          (bit-shift-left (nth  bytes 3) 0))))
 
-(defn bytes->oct [bytes]
-  (let [base 8
-        bytes (reverse bytes)]
-    (reduce + (map-indexed (fn [index b]
-                             (int (* (Math/pow base index) b)))
-                           bytes))))
+(defn bytes->oct [block]
+  (.. (BigInteger. (toBytes block))
+      (toString 8)))
 
-(defn bytes->str [bytes]
-  (clojure.string/join "" (map (fn [c]
-                                 (char (max 0, c)))
-                               bytes)))
+(defn bytes->str [block]
+  (String. (toBytes block))
+  #_(clojure.string/join "" (map (fn [c]
+                                   (char (max 0, c)))
+                                 bytes)))
 
 (defn take-between [i j coll]
   (let [chunk (drop i coll)
@@ -89,34 +96,30 @@
     field-type-size-offset))
 
 (defn pointer [struct data]
-  (let [type->fn {:int16 bytes->int
-                  :int32 bytes->int
-                  :char char
-                  :boolean boolean
-                  :byte byte}
-        md (struct-metadata struct)
+  (let [md (struct-metadata struct)
         offset (atom 0)]
     (fn [arg0 & args]
       (if (-> args count zero?)
         (let [field arg0
               field-type (-> md field :type)
               field-offset (-> md field :offset)
-              size (-> md field :size)
-              chunk (if (= size 0)
-                      (let [size (count data)]
-                        (take-between (+ @offset field-offset) size data))
-                      (take-between (+ @offset field-offset) (+ @offset field-offset size) data))]
+              size (-> md field :size)]
+
+          (if (= size 0)
+            (let [size (count data)]
+              (take-between (+ @offset field-offset) size data))
+            (take-between (+ @offset field-offset) (+ @offset field-offset size) data))
           
-          (if (vector? field-type)
-            (let [[type count] field-type]
-              (map (fn [byte]
-                     (let [coerce-fn (type->fn type)]
-                       (coerce-fn byte)))
-                   chunk))
-            (let [coerce-fn (type->fn field-type)]
-              (if coerce-fn
-                (coerce-fn chunk)
-                chunk))))
+          #_(if (vector? field-type)
+              (let [[type count] field-type]
+                (map (fn [byte]
+                       (let [coerce-fn (type->fn type)]
+                         (coerce-fn byte)))
+                     chunk))
+              (let [coerce-fn (type->fn field-type)]
+                (if coerce-fn
+                  (coerce-fn chunk)
+                  chunk))))
         (let [+or- arg0
               a-num (first args)
               size (* a-num (sizeof struct))]
@@ -145,18 +148,21 @@
 (comment
   
   (let [data (sniff "/home/sto/workspace/clgit/person.dat")
-        person [:id :int32
+        person [:id [:byte 4] ;;:int32
                 :fname [:char 20]
                 :lname [:char 20]]
         pt (pointer person data)]
     (doseq [i (range 3)]
-      (prn "id=" (pt :id))
+      (prn "id=" (bytes->int (reverse (pt :id))))
+      (prn "id=" (bytes->int (pt :id)))
+      ;;(prn "id=" (pt :id))
       (prn "fname=" (pt :fname))
       (prn "lname=" (pt :lname))
       (pt + 1))
     )
   
-
+  (bytes->int [0 0 0 5])
+  
   (let [data (sniff "/home/sto/workspace/clgit/integers")
         in (-> data
                (java.io.ByteArrayInputStream.)

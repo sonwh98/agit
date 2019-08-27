@@ -71,7 +71,7 @@
         header (vd/take-between 0 header-size file-bytes)
         num-of-entries  (vd/bytes->int (take-last 4 header))
         entry-pt (atom header-size)]
-
+    (prn "header=" header)
     (doseq [i (range num-of-entries)
             :let [sha-start (+ @entry-pt (* 4 10))
                   sha-end (+ sha-start 20)
@@ -90,29 +90,47 @@
 
 (defn parse [index-file]
   (let [data (vd/sniff index-file)
-        header [:signature [:char 4]
-                :version :int32
-                :entry-count :int32
-                :entries :bytes]
-        pt (vd/pointer header data)]
-
-    (pt :entry-count)
-    )
-  )
+        index [:signature [:char 4]
+               :version :int32
+               :entry-count :int32
+               :entries :byte*]
+        entry [:ctime-sec :int32
+               :ctime-nsec :int32
+               :mtime-sec :int32
+               :mtime-nsec :int32
+               :dev :int32
+               :ino :int32
+               :mode [:byte 4]
+               :uid :int32
+               :gid :int32
+               :size :int32
+               :sha1 [:byte 20]
+               :flags [:byte 2]
+               :name [:char 11]]
+        index-pt (vd/pointer index data)
+        entries (index-pt :entries)
+        entry-pt (vd/pointer entry entries)]
+    
+    (doseq [i (-> :entry-count index-pt vd/bytes->int range)]
+      (prn "ctime=" (vd/bytes->int (entry-pt :ctime-sec)) (vd/bytes->int (entry-pt :ctime-nsec)))
+      (prn "mtime=" (vd/bytes->int (entry-pt :mtime-sec)) (vd/bytes->int (entry-pt :mtime-nsec)))
+      (prn "dev=" (vd/bytes->oct (entry-pt :dev)))
+      (prn "ino=" (entry-pt :ino))
+      (prn "mode=" (vd/bytes->oct (entry-pt :mode)))
+      (prn "uid=" (vd/bytes->int (entry-pt :uid)))
+      (prn "gid=" (vd/bytes->int (entry-pt :gid)))
+      (prn "size=" (vd/bytes->int (entry-pt :size)))
+      (prn "sha1=" (outil/bytes->hex (entry-pt :sha1)))
+      (prn "flags=" (entry-pt :flags))
+      (prn "length=" (second (entry-pt :flags)))
+      (prn "name=" (vd/bytes->str (entry-pt :name)))      
+      (entry-pt + 1)
+      (prn "------ " i)
+      )))
 
 (comment
   (parse-index "/tmp/test/.git/index")
+  (parse "/tmp/test/.git/index")
 
-  
-  (let [data (vd/sniff "/tmp/test/.git/index")
-        header [:signature [:char 4]
-                :version :int32
-                :entry-count :int32
-                :entries :bytes*]
-        pt (vd/pointer header data)]
-    (pt :entries)
 
-    )
-
-  (vd/take-between 12 255 (vd/sniff "/tmp/test/.git/index"))
   )
