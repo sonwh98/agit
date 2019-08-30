@@ -4,10 +4,7 @@
             [octet.core :as buf]
             [octet.spec :as spec]
             [octet.util :as outil]
-            [stigmergy.voodoo :as vd])
-  (:import [java.nio ByteBuffer]
-           [org.apache.commons.codec.binary Hex]
-           [org.apache.commons.codec.digest DigestUtils])  )
+            [stigmergy.voodoo :as vd]))
 
 (defn init
   ([{:keys [dir]}]
@@ -84,13 +81,12 @@
       (prn "uid=" (vd/bytes->int (entry-pt :uid)))
       (prn "gid=" (vd/bytes->int (entry-pt :gid)))
       (prn "size=" (vd/bytes->int (entry-pt :size)))
-      (prn "sha1=" (outil/bytes->hex (entry-pt :sha1)))
+      (prn "sha1=" (vd/bytes->hex (entry-pt :sha1)))
       (prn "flags=" (entry-pt :flags))
       (prn "name-len=" name-len)
       (prn "name=" (vd/bytes->str file-name))      
       (entry-pt + :name name-len (padding name-len))
-      (prn "------ " i)
-      )))
+      (prn "------ " i))))
 
 (comment
   (parse-index "/tmp/test/.git/index")

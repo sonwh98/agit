@@ -29,8 +29,8 @@
         num (- j i)]
     (take num chunk)))
 
-(defn bytes->hex-str [bytes]
-  (Hex/encodeHexString bytes))
+(defn bytes->hex [bytes]
+  (-> bytes toBytes Hex/encodeHexString))
 
 (defn hex-str->bytes [hex-str]
   (Hex/decodeHex hex-str))
