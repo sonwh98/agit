@@ -105,26 +105,29 @@
                :gid :int32
                :size :int32
                :sha1 [:byte 20]
-               :flags [:byte 2]
-               :name [:char 11]]
+               :flags :byte
+               :name-len :byte
+               :name :char*]
         index-pt (vd/pointer index data)
         entries (index-pt :entries)
         entry-pt (vd/pointer entry entries)]
     
-    (doseq [i (-> :entry-count index-pt vd/bytes->int range)]
+    (doseq [i (-> :entry-count index-pt vd/bytes->int range)
+            :let [name-len (vd/bytes->int (entry-pt :name-len))
+                  file-name (take name-len (entry-pt :name))]]
       (prn "ctime=" (vd/bytes->int (entry-pt :ctime-sec)) (vd/bytes->int (entry-pt :ctime-nsec)))
       (prn "mtime=" (vd/bytes->int (entry-pt :mtime-sec)) (vd/bytes->int (entry-pt :mtime-nsec)))
-      (prn "dev=" (vd/bytes->oct (entry-pt :dev)))
-      (prn "ino=" (entry-pt :ino))
+      (prn "dev=" (vd/bytes->int (entry-pt :dev)))
+      (prn "ino=" (vd/bytes->int (entry-pt :ino)))
       (prn "mode=" (vd/bytes->oct (entry-pt :mode)))
       (prn "uid=" (vd/bytes->int (entry-pt :uid)))
       (prn "gid=" (vd/bytes->int (entry-pt :gid)))
       (prn "size=" (vd/bytes->int (entry-pt :size)))
       (prn "sha1=" (outil/bytes->hex (entry-pt :sha1)))
       (prn "flags=" (entry-pt :flags))
-      (prn "length=" (second (entry-pt :flags)))
-      (prn "name=" (vd/bytes->str (entry-pt :name)))      
-      (entry-pt + 1)
+      (prn "name-len=" name-len)
+      (prn "name=" (vd/bytes->str file-name))      
+      (entry-pt + :name name-len (padding name-len))
       (prn "------ " i)
       )))
 
@@ -132,5 +135,7 @@
   (parse-index "/tmp/test/.git/index")
   (parse "/tmp/test/.git/index")
 
+  (def foo '&:name)
+  (def a (atom 0))
 
   )
