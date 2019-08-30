@@ -1,8 +1,6 @@
 (ns stigmergy.voodoo
   (:import [org.apache.commons.codec.binary Hex]
-           [org.apache.commons.codec.digest DigestUtils]
-           #_[clojure.lang IAtom IDeref IRef]
-           ))
+           [org.apache.commons.codec.digest DigestUtils]))
 
 (defn toBytes [block]
   (cond
@@ -10,15 +8,9 @@
     (bytes? block) block
     :else [block]))
 
-(defn bytes->num [bytes base]
-  (reduce + (map-indexed (fn [index b]
-                           (int (* (Math/pow base index) b)))
-                         bytes)))
-
 (defn bytes->int [block]
   (.. (BigInteger. (toBytes block))
       intValue)
-  
   #_(let []
       (+  (bit-shift-left (nth bytes 0) 24)
           (bit-shift-left (nth  bytes 1) 16)
@@ -30,10 +22,7 @@
       (toString 8)))
 
 (defn bytes->str [block]
-  (String. (toBytes block))
-  #_(clojure.string/join "" (map (fn [c]
-                                   (char (max 0, c)))
-                                 bytes)))
+  (String. (toBytes block)))
 
 (defn take-between [i j coll]
   (let [chunk (drop i coll)
@@ -137,37 +126,3 @@
                      fp))
         path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
     (java.nio.file.Files/readAllBytes path)))
-
-
-(comment
-  
-  (let [data (sniff "/home/sto/workspace/clgit/person.dat")
-        person [:id [:byte 4] ;;:int32
-                :fname [:char 20]
-                :lname [:char 20]]
-        pt (pointer person data)]
-    (doseq [i (range 3)]
-      ;;(prn "id=" (bytes->int (reverse (pt :id))))
-      (prn "id=" (bytes->int (pt :id)))
-      ;;(prn "id=" (pt :id))
-      (prn "fname=" (pt :fname))
-      (prn "lname=" (pt :lname))
-      (pt + 1))
-    )
-  
-  (bytes->int [0 0 0 5])
-  
-  (let [data (sniff "/home/sto/workspace/clgit/integers")
-        in (-> data
-               (java.io.ByteArrayInputStream.)
-               (java.io.DataInputStream.))
-        ]
-    (prn (seq data))
-    (prn (.. in (readInt)))
-    )
-
-  (struct? [:c])
-  (sizeof [:c])
-
-
-  )
