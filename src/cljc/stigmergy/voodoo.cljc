@@ -96,34 +96,28 @@
     field-type-size-offset))
 
 (defn pointer [struct data]
-  (let [md (struct-metadata struct)
+  (let [metadata (struct-metadata struct)
         offset (atom 0)]
     (fn [arg0 & args]
       (if (-> args count zero?)
         (let [field arg0
-              field-type (-> md field :type)
-              field-offset (-> md field :offset)
-              size (-> md field :size)]
-
+              field-type (-> metadata field :type)
+              field-offset (-> metadata field :offset)
+              size (-> metadata field :size)]
           (if (= size 0)
             (let [size (count data)]
               (take-between (+ @offset field-offset) size data))
-            (take-between (+ @offset field-offset) (+ @offset field-offset size) data))
-          
-          #_(if (vector? field-type)
-              (let [[type count] field-type]
-                (map (fn [byte]
-                       (let [coerce-fn (type->fn type)]
-                         (coerce-fn byte)))
-                     chunk))
-              (let [coerce-fn (type->fn field-type)]
-                (if coerce-fn
-                  (coerce-fn chunk)
-                  chunk))))
+            (take-between (+ @offset field-offset) (+ @offset field-offset size) data)))
         (let [+or- arg0
-              a-num (first args)
-              size (* a-num (sizeof struct))]
-          (swap! offset +or- size))))))
+              next-offset (reduce + (map (fn [field-or-offset]
+                                           (if (keyword? field-or-offset)
+                                             (let [field field-or-offset]
+                                               (-> field metadata :offset))
+                                             (let [offset field-or-offset]
+                                               field-or-offset)))
+                                         args))]
+          (swap! offset (fn [offset]
+                          (+or- offset next-offset))))))))
 
 
 (defn read-bytes
@@ -153,7 +147,7 @@
                 :lname [:char 20]]
         pt (pointer person data)]
     (doseq [i (range 3)]
-      (prn "id=" (bytes->int (reverse (pt :id))))
+      ;;(prn "id=" (bytes->int (reverse (pt :id))))
       (prn "id=" (bytes->int (pt :id)))
       ;;(prn "id=" (pt :id))
       (prn "fname=" (pt :fname))
@@ -171,5 +165,9 @@
     (prn (seq data))
     (prn (.. in (readInt)))
     )
+
+  (struct? [:c])
+  (sizeof [:c])
+
 
   )
