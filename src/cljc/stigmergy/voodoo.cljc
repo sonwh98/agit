@@ -27,11 +27,6 @@
 (defn bytes->str [block]
   (String. (toBytes block)))
 
-(defn take-between [i j coll]
-  (let [chunk (drop i coll)
-        num (- j i)]
-    (take num chunk)))
-
 (defn bytes->hex [bytes]
   (-> bytes toBytes Hex/encodeHexString))
 
@@ -86,6 +81,11 @@
                                                 []
                                                 field-type-size))]
     field-type-size-offset))
+
+(defn take-between [i j coll]
+  (let [chunk (drop i coll)
+        num (- j i)]
+    (take num chunk)))
 
 (defn pointer [struct data]
   (let [metadata (struct-metadata struct)
