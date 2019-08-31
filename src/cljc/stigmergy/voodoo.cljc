@@ -21,6 +21,9 @@
   (.. (BigInteger. (toBytes block))
       (toString 8)))
 
+(defn bytes->char [block]
+  (map #(char %) block))
+
 (defn bytes->str [block]
   (String. (toBytes block)))
 
@@ -107,7 +110,6 @@
                                          args))]
           (swap! offset (fn [offset]
                           (+or- offset next-offset))))))))
-
 
 (defn read-bytes
   "read num-of-bytes from input-stream and return as a byte-array"
