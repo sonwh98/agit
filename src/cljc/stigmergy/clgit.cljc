@@ -70,29 +70,29 @@
         entry-count (vd/bytes->int (index-pt :entry-count))
         entries (index-pt :entries)
         entry-pt (vd/pointer entry entries)
-        index {:signature (vd/bytes->char (index-pt :signature))
-               :version (vd/bytes->int (index-pt :version))
-               :entry-count entry-count
-               :entries (for [i (range entry-count)]
-                          (let [name-len (vd/bytes->int (entry-pt :name-len))
-                                file-name (take name-len (entry-pt :name))
-                                entry {:ctime-sec (vd/bytes->int (entry-pt :ctime-sec))
-                                       :ctime-nsec (vd/bytes->int (entry-pt :ctime-nsec))
-                                       :mtime-sec (vd/bytes->int (entry-pt :mtime-sec))
-                                       :mtime-nsec (vd/bytes->int (entry-pt :mtime-nsec))
-                                       :dev (vd/bytes->int (entry-pt :dev))
-                                       :ino (vd/bytes->int (entry-pt :ino))
-                                       :mode (vd/bytes->oct (entry-pt :mode))
-                                       :uid (vd/bytes->int (entry-pt :uid))
-                                       :gid (vd/bytes->int (entry-pt :gid))
-                                       :size (vd/bytes->int (entry-pt :size))
-                                       :sha1 (vd/bytes->hex (entry-pt :sha1))
-                                       :flags (entry-pt :flags)
-                                       :name-len name-len
-                                       :name (vd/bytes->str file-name)}]
-                            (entry-pt + :name name-len (padding name-len))
-                            entry))}]
-    index))
+        index-map {:signature (vd/bytes->char (index-pt :signature))
+                   :version (vd/bytes->int (index-pt :version))
+                   :entry-count entry-count
+                   :entries (for [i (range entry-count)]
+                              (let [name-len (vd/bytes->int (entry-pt :name-len))
+                                    file-name (take name-len (entry-pt :name))
+                                    entry {:ctime-sec (vd/bytes->int (entry-pt :ctime-sec))
+                                           :ctime-nsec (vd/bytes->int (entry-pt :ctime-nsec))
+                                           :mtime-sec (vd/bytes->int (entry-pt :mtime-sec))
+                                           :mtime-nsec (vd/bytes->int (entry-pt :mtime-nsec))
+                                           :dev (vd/bytes->int (entry-pt :dev))
+                                           :ino (vd/bytes->int (entry-pt :ino))
+                                           :mode (vd/bytes->oct (entry-pt :mode))
+                                           :uid (vd/bytes->int (entry-pt :uid))
+                                           :gid (vd/bytes->int (entry-pt :gid))
+                                           :size (vd/bytes->int (entry-pt :size))
+                                           :sha1 (vd/bytes->hex (entry-pt :sha1))
+                                           :flags (entry-pt :flags)
+                                           :name-len name-len
+                                           :name (vd/bytes->str file-name)}]
+                                (entry-pt + :name name-len (padding name-len))
+                                entry))}]
+    index-map))
 
 (comment
   (parse-index "/tmp/test/.git/index")
