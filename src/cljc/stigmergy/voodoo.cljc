@@ -39,30 +39,30 @@
 (defn struct? [struct]
   (and (vector? struct) (> (count struct) 2 )))
 
-(defn sizeof [t] {:pre [(or (vector? t) (keyword? t))]}
-  (let [type->size {:byte 1
-                    :byte* 0
+(def type->size {:byte 1
+                 :byte* 0
 
-                    :char 1
-                    :char* 0
-                    
-                    :int16 2
-                    :int16* 0
-                    
-                    :int32 4
-                    :int32* 0
-                    
-                    :boolean 1
-                    :boolean* 0
-                    }]
-    (cond
-      (keyword? t) (type->size t)
-      (struct? t) (let [field-type-pairs (partition 2 t)]
-                    (reduce + (map-indexed (fn [index [field type]]
-                                             (sizeof type))
-                                           field-type-pairs)))
-      :else (let [[seq-type count] t]
-              (* (sizeof seq-type) count)))))
+                 :boolean 1
+                 :boolean* 0
+                 
+                 :char 1
+                 :char* 0
+                 
+                 :int16 2
+                 :int16* 0
+                 
+                 :int32 4
+                 :int32* 0})
+
+(defn sizeof [t] {:pre [(or (vector? t) (keyword? t))]}
+  (cond
+    (keyword? t) (type->size t)
+    (struct? t) (let [field-type-pairs (partition 2 t)]
+                  (reduce + (map-indexed (fn [index [field type]]
+                                           (sizeof type))
+                                         field-type-pairs)))
+    :else (let [[seq-type count] t]
+            (* (sizeof seq-type) count))))
 
 (defn struct-metadata [struct]
   (let [field-type-pairs (partition 2 struct)
