@@ -46,9 +46,8 @@
                   2)]
     (- target n)))
 
-(defn parse-index [index-file]
-  (let [data (vd/sniff index-file)
-        index [:signature [:char 4]
+(defn index-buffer->map [byte-buffer]
+  (let [index [:signature [:char 4]
                :version :int32
                :entry-count :int32
                :entries :byte*]
@@ -66,7 +65,7 @@
                :flags :byte
                :name-len :byte
                :name :char*]
-        index-pt (vd/pointer index data)
+        index-pt (vd/pointer index byte-buffer)
         entry-count (vd/bytes->int (index-pt :entry-count))
         entries (index-pt :entries)
         entry-pt (vd/pointer entry entries)
@@ -93,6 +92,10 @@
                                 (entry-pt + :name name-len (padding name-len))
                                 entry))}]
     index-map))
+
+(defn parse-index [index-file]
+  (let [buffer (vd/sniff index-file)]
+    (index-buffer->map buffer)))
 
 (comment
   (parse-index "/tmp/test/.git/index")
