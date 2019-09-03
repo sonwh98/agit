@@ -90,7 +90,9 @@
                                 entry))}]
     index-map))
 
-(defn parse-index [index-file]
+(defn parse-index
+  "parse a git index file, e.g. myproject/.git/index"
+  [index-file]
   (let [buffer (vd/suck index-file)]
     (index-buffer->map buffer)))
 
