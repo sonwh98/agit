@@ -1,9 +1,6 @@
 (ns stigmergy.clgit
   (:require [stigmergy.io :as io]
             [clojure.java.io :as jio]
-            [octet.core :as buf]
-            [octet.spec :as spec]
-            [octet.util :as outil]
             [stigmergy.voodoo :as vd]))
 
 (defn init
@@ -38,7 +35,7 @@
         git-str (str "blob " size "\0" data)]
     (-> git-str
         vd/sha1-as-bytes
-        vd/bytes->hex-str)))
+        vd/bytes->hex)))
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
@@ -94,9 +91,43 @@
     index-map))
 
 (defn parse-index [index-file]
-  (let [buffer (vd/sniff index-file)]
+  (let [buffer (vd/suck index-file)]
     (index-buffer->map buffer)))
 
 (comment
   (parse-index "/tmp/test/.git/index")
+  (defn foo [a-map]
+    (reduce merge (for [[k v] a-map]
+                    (into {} (for [[k' v'] v]
+                               [[k k'] v'])))))
+
+  (defn foo1 [m]
+    (into {}
+          (for [[k v] m [vk vv] v]
+            [[k vk] vv])))
+  
+  (foo1 '{a {p 1, q 2}
+          b {m 3, n 4}})
+
+  (def digits [1 2 3])
+  (for [x1 digits x2 digits] [x1 x2])
+  
+  
+  
+  (= [:a :b :c] (list :a :b :c) (vec '(:a :b :c)) (vector :a :b :c))
+  (conj {:a 1} {:b 2} [:c 3])
+  (last [1 2 3 4 5])
+  (drop-last  (take-last 2 [1 2 3 4]))
+
+  ((fn foo [coll]
+     (first (last  (map-indexed (fn [i c]
+                                  [i c])
+                                coll)))
+     ) '(1 2 3 3 1))
+
+  (reduce (fn [a b]
+            (conj a b)
+            )
+          '()
+          '(1 2 3))gggg
   )
