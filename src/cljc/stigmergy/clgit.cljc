@@ -96,24 +96,32 @@
   (let [buffer (vd/suck index-file)]
     (index-buffer->map buffer)))
 
-(defn add [file]
+(defn add [file-name]
   (let [index (parse-index "/tmp/test/.git/index")
         entries (:entries index)
-        file-buffer (vd/suck file) 
-        new-entry {:ino 6291480
-                   :uid 1000
-                   :name file
-                   :ctime-nsec 405941366
-                   :mode "100644"
-                   :size (count file-buffer)
-                   :gid 1000
-                   :sha1 (-> file-buffer vd/sha1-as-bytes vd/bytes->hex)
-                   :flags 0
-                   :mtime-nsec 405941366
-                   :name-len (count file)
-                   :dev 2050
-                   :ctime-sec 1566415267
-                   :mtime-sec 1566415267}
+        paths (clojure.string/split file-name #"/")
+        root-dir (let [fp (first paths)]
+                   (if (= "" fp)
+                     "/"
+                     fp))  
+        path (java.nio.file.Paths/get root-dir (into-array (rest paths)))
+        file-attributes (java.nio.file.Files/readAttributes path  java.nio.file.attribute.BasicFileAttributes
+                                                            (into-array [java.nio.file.LinkOption/NOFOLLOW_LINKS]))
+        file-buffer (vd/suck file-name) new-entry {:ino 6291480
+                                                   :uid 1000
+                                                   :name file-name
+                                                   :ctime-sec (.. file-attributes lastModifiedTime)
+                                                   :ctime-nsec (.. file-attributes lastAccessTime)
+                                                   :mode "100644"
+                                                   :size (count file-buffer)
+                                                   :gid 1000
+                                                   :sha1 (-> file-buffer vd/sha1-as-bytes vd/bytes->hex)
+                                                   :flags 0
+                                                   :mtime-sec (.. file-attributes lastModifiedTime)
+                                                   :mtime-nsec (.. file-attributes lastModifiedTime)
+                                                   :name-len (count file-name)
+                                                   :dev 2050
+                                                   }
         entries (sort-by :name (conj entries new-entry))
         index (assoc index :entries entries :entry-count (count entries))]
     index
