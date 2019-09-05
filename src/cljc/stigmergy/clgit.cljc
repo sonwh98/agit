@@ -99,21 +99,23 @@
 (defn add [file]
   (let [index (parse-index "/tmp/test/.git/index")
         entries (:entries index)
-        new-entry {:ino 6291480,
-                   :uid 1000,
-                   :name "bar12.txt",
-                   :ctime-nsec 405941366,
-                   :mode "100644",
-                   :size 4,
-                   :gid 1000,
-                   :sha1 "5716ca5987cbf97d6bb54920bea6adde242d87e5",
-                   :flags 0,
-                   :mtime-nsec 405941366,
-                   :name-len 7,
-                   :dev 2050,
-                   :ctime-sec 1566415267,
+        file-buffer (vd/suck file) 
+        new-entry {:ino 6291480
+                   :uid 1000
+                   :name file
+                   :ctime-nsec 405941366
+                   :mode "100644"
+                   :size (count file-buffer)
+                   :gid 1000
+                   :sha1 (-> file-buffer vd/sha1-as-bytes vd/bytes->hex)
+                   :flags 0
+                   :mtime-nsec 405941366
+                   :name-len (count file)
+                   :dev 2050
+                   :ctime-sec 1566415267
                    :mtime-sec 1566415267}
-        index (assoc index :entries (conj entries new-entry) :entry-count 5)]
+        entries (sort-by :name (conj entries new-entry))
+        index (assoc index :entries entries :entry-count (count entries))]
     index
     )
   )
@@ -121,5 +123,5 @@
 (comment
   (parse-index "/tmp/test/.git/index")
 
-  (add "foo")
+  (add "/tmp/test/src/add.clj")
   )
