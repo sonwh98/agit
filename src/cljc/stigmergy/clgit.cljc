@@ -1,7 +1,9 @@
 (ns stigmergy.clgit
   (:require [stigmergy.io :as io]
             [clojure.java.io :as jio]
-            [stigmergy.voodoo :as vd]))
+            [stigmergy.voodoo :as vd])
+  (:import [java.nio.file Files LinkOption])
+  )
 
 (defn init
   ([{:keys [dir]}]
@@ -105,23 +107,29 @@
                      "/"
                      fp))  
         path (java.nio.file.Paths/get root-dir (into-array (rest paths)))
-        file-attributes (java.nio.file.Files/readAttributes path  java.nio.file.attribute.BasicFileAttributes
-                                                            (into-array [java.nio.file.LinkOption/NOFOLLOW_LINKS]))
-        file-buffer (vd/suck file-name) new-entry {:ino 6291480
-                                                   :uid 1000
-                                                   :name file-name
-                                                   :ctime-sec (.. file-attributes lastModifiedTime)
-                                                   :ctime-nsec (.. file-attributes lastAccessTime)
-                                                   :mode "100644"
-                                                   :size (count file-buffer)
-                                                   :gid 1000
-                                                   :sha1 (-> file-buffer vd/sha1-as-bytes vd/bytes->hex)
-                                                   :flags 0
-                                                   :mtime-sec (.. file-attributes lastModifiedTime)
-                                                   :mtime-nsec (.. file-attributes lastModifiedTime)
-                                                   :name-len (count file-name)
-                                                   :dev 2050
-                                                   }
+        file-attributes (Files/readAttributes path  java.nio.file.attribute.BasicFileAttributes
+                                              (into-array [LinkOption/NOFOLLOW_LINKS]))
+        last-modified (.. file-attributes lastModifiedTime toMillis)
+        last-access (.. file-attributes lastAccessTime toMillis)
+        file-buffer (vd/suck file-name)
+        new-entry {:ino 6291480
+                   :uid (Files/getAttribute path "unix:uid"
+                                            (into-array [LinkOption/NOFOLLOW_LINKS]))
+                   :gid (Files/getAttribute path "unix:gid"
+                                            (into-array [LinkOption/NOFOLLOW_LINKS]))
+                   :name file-name
+                   :ctime-sec last-modified
+                   :ctime-nsec last-access
+                   :mode "100644"
+                   :size (count file-buffer)
+                   
+                   :sha1 (-> file-buffer vd/sha1-as-bytes vd/bytes->hex)
+                   :flags 0
+                   :mtime-sec last-modified
+                   :mtime-nsec last-modified
+                   :name-len (count file-name)
+                   :dev 2050
+                   }
         entries (sort-by :name (conj entries new-entry))
         index (assoc index :entries entries :entry-count (count entries))]
     index
