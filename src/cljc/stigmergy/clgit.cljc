@@ -70,7 +70,7 @@
                    :version (vd/bytes->int (index-pt :version))
                    :entry-count entry-count
                    :entries (for [i (range entry-count)]
-                              (let [name-len (vd/bytes->int (entry-pt :name-len))
+                              (let [name-len (entry-pt :name-len)
                                     file-name (take name-len (entry-pt :name))
                                     entry {:ctime-sec (vd/bytes->int (entry-pt :ctime-sec))
                                            :ctime-nsec (vd/bytes->int (entry-pt :ctime-nsec))
@@ -96,6 +96,30 @@
   (let [buffer (vd/suck index-file)]
     (index-buffer->map buffer)))
 
+(defn add [file]
+  (let [index (parse-index "/tmp/test/.git/index")
+        entries (:entries index)
+        new-entry {:ino 6291480,
+                   :uid 1000,
+                   :name "bar12.txt",
+                   :ctime-nsec 405941366,
+                   :mode "100644",
+                   :size 4,
+                   :gid 1000,
+                   :sha1 "5716ca5987cbf97d6bb54920bea6adde242d87e5",
+                   :flags 0,
+                   :mtime-nsec 405941366,
+                   :name-len 7,
+                   :dev 2050,
+                   :ctime-sec 1566415267,
+                   :mtime-sec 1566415267}
+        index (assoc index :entries (conj entries new-entry) :entry-count 5)]
+    index
+    )
+  )
+
 (comment
   (parse-index "/tmp/test/.git/index")
+
+  (add "foo")
   )
