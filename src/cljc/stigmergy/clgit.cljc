@@ -2,7 +2,8 @@
   (:require [stigmergy.io :as io]
             [clojure.java.io :as jio]
             [stigmergy.voodoo :as vd])
-  (:import [java.nio.file Files LinkOption])
+  (:import [java.nio.file Files LinkOption]
+           [java.nio.file.attribute PosixFilePermissions])
   )
 
 (defn init
@@ -107,37 +108,43 @@
                      "/"
                      fp))  
         path (java.nio.file.Paths/get root-dir (into-array (rest paths)))
-        file-attributes (Files/readAttributes path  java.nio.file.attribute.BasicFileAttributes
-                                              (into-array [LinkOption/NOFOLLOW_LINKS]))
-        last-modified (.. file-attributes lastModifiedTime toMillis)
-        last-access (.. file-attributes lastAccessTime toMillis)
+        file-attributes (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))
         file-buffer (vd/suck file-name)
-        new-entry {:ino 6291480
-                   :uid (Files/getAttribute path "unix:uid"
-                                            (into-array [LinkOption/NOFOLLOW_LINKS]))
-                   :gid (Files/getAttribute path "unix:gid"
-                                            (into-array [LinkOption/NOFOLLOW_LINKS]))
-                   :name file-name
-                   :ctime-sec last-modified
-                   :ctime-nsec last-access
-                   :mode "100644"
-                   :size (count file-buffer)
+        ctime (get file-attributes "ctime")
+        last-modified (get file-attributes "lastModifiedTime")
+        new-entry {:ctime-sec (.. ctime toMillis)
+                   :ctime-nsec (.. ctime toMillis)
+                   :mtime-sec (.. last-modified toMillis)
+                   :mtime-nsec (.. last-modified toMillis)
+
+                   :dev (get file-attributes "dev")
+                   :ino (get file-attributes "ino")
+                   :mode (vd/bytes->oct (vd/int->bytes (get file-attributes "mode")))
                    
+                   :uid (get file-attributes "uid")
+                   :gid (get file-attributes "gid")
+                   :size (get file-attributes "size")
                    :sha1 (-> file-buffer vd/sha1-as-bytes vd/bytes->hex)
                    :flags 0
-                   :mtime-sec last-modified
-                   :mtime-nsec last-modified
                    :name-len (count file-name)
-                   :dev 2050
-                   }
+                   :name file-name}
         entries (sort-by :name (conj entries new-entry))
         index (assoc index :entries entries :entry-count (count entries))]
-    index
-    )
-  )
+    index))
 
 (comment
   (parse-index "/tmp/test/.git/index")
 
   (add "/tmp/test/src/add.clj")
+
+
+  (def a (let [paths (clojure.string/split "/tmp/test/src/add.clj" #"/")
+               root-dir (let [fp (first paths)]
+                          (if (= "" fp)
+                            "/"
+                            fp))
+               _ (prn "root" root-dir)
+               path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
+           (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))))
+  
   )
