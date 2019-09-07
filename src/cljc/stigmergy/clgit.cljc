@@ -46,6 +46,27 @@
                   2)]
     (- target n)))
 
+(defonce struct-header [:signature [:char 4]
+                        :version :int32
+                        :entry-count :int32])
+
+(defonce struct-entry [:ctime-sec :int32
+                       :ctime-nsec :int32
+                       :mtime-sec :int32
+                       :mtime-nsec :int32
+                       :dev :int32
+                       :ino :int32
+                       :mode [:byte 4]
+                       :uid :int32
+                       :gid :int32
+                       :size :int32
+                       :sha1 [:byte 20]
+                       :flags :byte
+                       :name-len :byte
+                       :name :char*])
+
+(defonce index (concat struct-header [:entries :byte*]))
+
 (defn index-buffer->map [byte-buffer]
   (let [index [:signature [:char 4]
                :version :int32
@@ -93,6 +114,22 @@
                                 entry))}]
     index-map))
 
+(defn map->index-buffer [index-map]
+  (let [header (for [[field type] (partition 2 struct-header)
+                     :let [value (index-map field)]]
+                 [field (cond
+                          (= type :int32) (vd/int->bytes value)
+                          :else value)])
+        entries (for [e (:entries index-map)]
+                  (into {} (for [[field type] (partition 2 struct-entry)
+                                 :let [value (e field)]]
+                             [field (cond
+                                      (= type :int32) (vd/int->bytes value)
+                                      :else value)])))]
+    (assoc (into {} header)
+           :entries entries)))
+
+
 (defn parse-index
   "parse a git index file, e.g. myproject/.git/index"
   [index-file]
@@ -110,10 +147,15 @@
         path (java.nio.file.Paths/get root-dir (into-array (rest paths)))
         file-attributes (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))
         file-buffer (vd/suck file-name)
-        ctime (get file-attributes "ctime")
+        ctime (..(get file-attributes "ctime")
+                 toMillis)
+        ctime-bytes (vd/int->bytes ctime)
+        _ (prn "ctime-bytes=" (seq ctime-bytes) " count=" (count ctime-bytes))
+        ctime-sec (vd/bytes->int (take 4 ctime-bytes))
+        ctime-nsec (vd/bytes->int (take-last 4 ctime-bytes))
         last-modified (get file-attributes "lastModifiedTime")
-        new-entry {:ctime-sec (.. ctime toMillis)
-                   :ctime-nsec (.. ctime toMillis)
+        new-entry {:ctime-sec ctime-sec
+                   :ctime-nsec ctime-nsec
                    :mtime-sec (.. last-modified toMillis)
                    :mtime-nsec (.. last-modified toMillis)
 
@@ -135,9 +177,17 @@
 (comment
   (parse-index "/tmp/test/.git/index")
 
-  (add "/tmp/test/src/add.clj")
+  (def index (add "/tmp/test/src/add.clj"))
+  (map->index-buffer index)
+  
+  (def m (:entries index))
 
-
+  (doseq [entry (:entries index)]
+    (doseq [[k v] entry]
+      (prn k )
+      )
+    )
+  
   (def a (let [paths (clojure.string/split "/tmp/test/src/add.clj" #"/")
                root-dir (let [fp (first paths)]
                           (if (= "" fp)
