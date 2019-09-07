@@ -118,17 +118,16 @@
   (let [header (for [[field type] (partition 2 struct-header)
                      :let [value (index-map field)]]
                  [field (cond
-                          (= type :int32) (vd/int->bytes value)
+                          (= type :int32) (vd/pad-right (vd/int->bytes value) 4 0)
                           :else value)])
         entries (for [e (:entries index-map)]
                   (into {} (for [[field type] (partition 2 struct-entry)
                                  :let [value (e field)]]
                              [field (cond
-                                      (= type :int32) (vd/int->bytes value)
+                                      (= type :int32) (vd/pad-right (vd/int->bytes value) 4 0)
                                       :else value)])))]
     (assoc (into {} header)
            :entries entries)))
-
 
 (defn parse-index
   "parse a git index file, e.g. myproject/.git/index"
@@ -143,7 +142,7 @@
         root-dir (let [fp (first paths)]
                    (if (= "" fp)
                      "/"
-                     fp))  
+                     fp))
         path (java.nio.file.Paths/get root-dir (into-array (rest paths)))
         file-attributes (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))
         file-buffer (vd/suck file-name)
