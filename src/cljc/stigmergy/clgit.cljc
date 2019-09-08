@@ -3,8 +3,7 @@
             [clojure.java.io :as jio]
             [stigmergy.voodoo :as vd])
   (:import [java.nio.file Files LinkOption]
-           [java.nio.file.attribute PosixFilePermissions])
-  )
+           [java.nio.file.attribute PosixFilePermissions]))
 
 (defn init
   ([{:keys [dir]}]
@@ -100,13 +99,14 @@
   (let [header (for [[field type] (partition 2 struct-header)
                      :let [value (index-map field)]]
                  [field (cond
-                          (= type :int32) (vd/pad-right (vd/int->bytes value) 4 0)
+                          (= type :int32) (vd/pad-left (vd/int->bytes value) (vd/sizeof type) 0)
                           :else value)])
         entries (for [e (:entries index-map)]
                   (into {} (for [[field type] (partition 2 struct-entry)
                                  :let [value (e field)]]
                              [field (cond
-                                      (= type :int32) (vd/pad-right (vd/int->bytes value) 4 0)
+                                      (= type :int32) (vd/pad-left (vd/int->bytes value)
+                                                                   (vd/sizeof type) 0)
                                       :else value)])))]
     (assoc (into {} header)
            :entries entries)))
@@ -116,6 +116,29 @@
   [index-file]
   (let [buffer (vd/suck index-file)]
     (index-buffer->map buffer)))
+
+(defonce struct-entry [:ctime-sec :int32
+                       :ctime-nsec :int32
+                       :mtime-sec :int32
+                       :mtime-nsec :int32
+                       :dev :int32
+                       :ino :int32
+                       :mode [:byte 4]
+                       :uid :int32
+                       :gid :int32
+                       :size :int32
+                       :sha1 [:byte 20]
+                       :flags :byte
+                       :name-len :byte
+                       :name :char*])
+
+(defn ms->sec-nanosec [ctime-ms]
+  (let [ctime-sec (mod (quot ctime-ms 1000)
+                       Integer/MAX_VALUE)
+        ctime-nsec (mod (* (- ctime-ms (* ctime-sec 1000))
+                           1000000)
+                        Integer/MAX_VALUE)]
+    [ctime-sec ctime-nsec]))
 
 (defn add [file-name]
   (let [index (parse-index "/tmp/test/.git/index")
@@ -127,14 +150,14 @@
                      fp))
         path (java.nio.file.Paths/get root-dir (into-array (rest paths)))
         file-attributes (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))
-        file-buffer (vd/suck file-name)
-        ctime (..(get file-attributes "ctime")
-                 toMillis)
-        ctime-bytes (vd/int->bytes ctime)
-        _ (prn "ctime-bytes=" (seq ctime-bytes) " count=" (count ctime-bytes))
-        ctime-sec (vd/bytes->int (take 4 ctime-bytes))
-        ctime-nsec (vd/bytes->int (take-last 4 ctime-bytes))
+        _ (prn "file-attr= " (keys file-attributes))
+
+        ctime (get file-attributes "ctime")
+        ctime-ms (.. ctime toMillis)
+        [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)
+        ;;ctime-bytes (-> ctime vd/int->bytes (vd/pad-left 8 0))
         last-modified (get file-attributes "lastModifiedTime")
+        file-buffer (vd/suck file-name)
         new-entry {:ctime-sec ctime-sec
                    :ctime-nsec ctime-nsec
                    :mtime-sec (.. last-modified toMillis)
@@ -163,11 +186,7 @@
   
   (def m (:entries index))
 
-  (doseq [entry (:entries index)]
-    (doseq [[k v] entry]
-      (prn k )
-      )
-    )
+
   
   (def a (let [paths (clojure.string/split "/tmp/test/src/add.clj" #"/")
                root-dir (let [fp (first paths)]
