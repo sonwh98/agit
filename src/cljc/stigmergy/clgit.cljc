@@ -68,28 +68,10 @@
 (defonce struct-index (concat struct-header [:entries :byte*]))
 
 (defn index-buffer->map [byte-buffer]
-  (let [index [:signature [:char 4]
-               :version :int32
-               :entry-count :int32
-               :entries :byte*]
-        entry [:ctime-sec :int32
-               :ctime-nsec :int32
-               :mtime-sec :int32
-               :mtime-nsec :int32
-               :dev :int32
-               :ino :int32
-               :mode [:byte 4]
-               :uid :int32
-               :gid :int32
-               :size :int32
-               :sha1 [:byte 20]
-               :flags :byte
-               :name-len :byte
-               :name :char*]
-        index-pt (vd/pointer index byte-buffer)
+  (let [index-pt (vd/pointer struct-index byte-buffer)
         entry-count (vd/bytes->int (index-pt :entry-count))
         entries (index-pt :entries)
-        entry-pt (vd/pointer entry entries)
+        entry-pt (vd/pointer struct-entry entries)
         index-map {:signature (vd/bytes->char (index-pt :signature))
                    :version (vd/bytes->int (index-pt :version))
                    :entry-count entry-count
