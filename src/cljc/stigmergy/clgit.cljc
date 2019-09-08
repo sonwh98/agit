@@ -65,7 +65,7 @@
                        :name-len :byte
                        :name :char*])
 
-(defonce index (concat struct-header [:entries :byte*]))
+(defonce struct-index (concat struct-header [:entries :byte*]))
 
 (defn index-buffer->map [byte-buffer]
   (let [index [:signature [:char 4]
