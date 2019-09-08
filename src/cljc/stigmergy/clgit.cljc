@@ -140,15 +140,12 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
-(defn add [file-name]
-  (let [index (parse-index "/tmp/test/.git/index")
+(defn add [{:keys [git-root file]}]
+  (let [project-root (last (clojure.string/split git-root #"/"))
+        index (parse-index (str git-root "/.git/index"))
         entries (:entries index)
-        paths (clojure.string/split file-name #"/")
-        root-dir (let [fp (first paths)]
-                   (if (= "" fp)
-                     "/"
-                     fp))
-        path (java.nio.file.Paths/get root-dir (into-array (rest paths)))
+        paths (clojure.string/split file #"/")
+        path (java.nio.file.Paths/get git-root (into-array paths))
         file-attributes (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))
         _ (prn "file-attr= " (keys file-attributes))
 
@@ -157,7 +154,7 @@
         [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)
         ;;ctime-bytes (-> ctime vd/int->bytes (vd/pad-left 8 0))
         last-modified (get file-attributes "lastModifiedTime")
-        file-buffer (vd/suck file-name)
+        file-buffer (vd/suck (str git-root "/" file))
         new-entry {:ctime-sec ctime-sec
                    :ctime-nsec ctime-nsec
                    :mtime-sec (.. last-modified toMillis)
@@ -172,8 +169,8 @@
                    :size (get file-attributes "size")
                    :sha1 (-> file-buffer vd/sha1-as-bytes vd/bytes->hex)
                    :flags 0
-                   :name-len (count file-name)
-                   :name file-name}
+                   :name-len (count file)
+                   :name file}
         entries (sort-by :name (conj entries new-entry))
         index (assoc index :entries entries :entry-count (count entries))]
     index))
@@ -181,7 +178,8 @@
 (comment
   (parse-index "/tmp/test/.git/index")
 
-  (def index (add "/tmp/test/src/add.clj"))
+  (def index (add {:git-root "/tmp/test"
+                   :file "src/add.clj"}))
   (map->index-buffer index)
   
   (def m (:entries index))
@@ -196,5 +194,11 @@
                _ (prn "root" root-dir)
                path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
            (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))))
-  
+
+  (let [git-root "/tmp/test"
+        project-root (last (clojure.string/split git-root #"/"))        
+        file "src/add.clj"]
+    
+    )
+  (clojure.string/split "src/add.clj" #"/")
   )
