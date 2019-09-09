@@ -158,11 +158,7 @@
   (let [project-root (last (clojure.string/split git-root #"/"))
         index (parse-index (str git-root "/.git/index"))
         entries (:entries index)
-        paths (clojure.string/split file #"/")
-        path (java.nio.file.Paths/get git-root (into-array paths))
-        file-attributes (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))
-        _ (prn "file-attr= " (keys file-attributes))
-
+        file-attributes (lstat (str git-root "/" file))
         ctime (get file-attributes "ctime")
         ctime-ms (.. ctime toMillis)
         [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)
