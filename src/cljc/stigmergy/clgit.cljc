@@ -107,6 +107,9 @@
                              [field (cond
                                       (= type :int32) (vd/pad-left (vd/int->bytes value)
                                                                    (vd/sizeof type) 0)
+                                      (= field :mode) (vd/oct->bytes value)
+                                      (= field :name) (mapv #(byte %) value)
+                                      (= field :sha1) (vd/hex->bytes value)
                                       :else value)])))]
     (assoc (into {} header)
            :entries entries)))
@@ -177,7 +180,7 @@
 
   (def index (add {:git-root "/tmp/test"
                    :file "src/add.clj"}))
-  (map->index-buffer index)
+  (def bi (map->index-buffer index))
   
   (def m (:entries index))
 
