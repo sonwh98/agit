@@ -140,6 +140,20 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
+(defn lstat [file]
+  (let [paths (clojure.string/split file #"/")
+        path0 (first paths)
+        root (cond
+               (clojure.string/blank? path0) "/"
+               (= 1 (count paths)) "."
+               :else path0)
+        more-paths (let [rest-paths (rest paths)]
+                     (if (empty? rest-paths)
+                       paths
+                       rest-paths))
+        path (java.nio.file.Paths/get root (into-array more-paths))]
+    (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))))
+
 (defn add [{:keys [git-root file]}]
   (let [project-root (last (clojure.string/split git-root #"/"))
         index (parse-index (str git-root "/.git/index"))
