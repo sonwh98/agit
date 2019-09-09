@@ -117,9 +117,15 @@
                                       (= field :name) (char->bytes value)
                                       (= field :sha1) (vd/hex->bytes value)
                                       :else value)])))
-        index-map (assoc (into {} header)
-                         :entries entries)]
-    index-map))
+        header-as-bytes (reduce (fn [acc [field value]]
+                                  (into acc value))
+                                []
+                                header)
+        ;; index-map (assoc (into {} header)
+        ;;                  :entries entries)
+        ]
+    
+    ))
 
 (defn parse-index
   "parse a git index file, e.g. myproject/.git/index"
