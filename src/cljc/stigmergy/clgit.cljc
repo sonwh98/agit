@@ -117,21 +117,6 @@
   (let [buffer (vd/suck index-file)]
     (index-buffer->map buffer)))
 
-(defonce struct-entry [:ctime-sec :int32
-                       :ctime-nsec :int32
-                       :mtime-sec :int32
-                       :mtime-nsec :int32
-                       :dev :int32
-                       :ino :int32
-                       :mode [:byte 4]
-                       :uid :int32
-                       :gid :int32
-                       :size :int32
-                       :sha1 [:byte 20]
-                       :flags :byte
-                       :name-len :byte
-                       :name :char*])
-
 (defn ms->sec-nanosec [ctime-ms]
   (let [ctime-sec (mod (quot ctime-ms 1000)
                        Integer/MAX_VALUE)
@@ -167,10 +152,10 @@
         mtime-ms (.. mtime toMillis)
         [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
         file-buffer (vd/suck (str git-root "/" file))
-        new-entry {:ctime-sec ctime-sec
+        new-entry {:ctime-sec ctime-sec 
                    :ctime-nsec ctime-nsec
-                   :mtime-sec mtime-sec
-                   :mtime-nsec mtime-nsec
+                   :mtime-sec mtime-sec 
+                   :mtime-nsec mtime-nsec 
 
                    :dev (get file-attributes "dev")
                    :ino (get file-attributes "ino")
