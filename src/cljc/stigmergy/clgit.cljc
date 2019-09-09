@@ -105,8 +105,9 @@
                   (into {} (for [[field type] (partition 2 struct-entry)
                                  :let [value (e field)]]
                              [field (cond
-                                      (= type :int32) (vd/pad-left (vd/int->bytes value)
-                                                                   (vd/sizeof type) 0)
+                                      (= type :int32) (->  value vd/int->bytes
+                                                           (vd/pad-left (vd/sizeof :int32) 0)
+                                                           vec)
                                       (= field :mode) (vd/oct->bytes value)
                                       (= field :name) (mapv #(byte %) value)
                                       (= field :sha1) (vd/hex->bytes value)
