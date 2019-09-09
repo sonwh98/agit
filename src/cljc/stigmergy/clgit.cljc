@@ -96,24 +96,30 @@
     index-map))
 
 (defn map->index-buffer [index-map]
-  (let [header (for [[field type] (partition 2 struct-header)
+  (let [int32->bytes (fn [value]
+                       (-> value vd/int->bytes
+                           (vd/pad-left (vd/sizeof :int32) 0)
+                           vec))
+        char->bytes (fn [value]
+                      (mapv #(byte %) value))
+        header (for [[field type] (partition 2 struct-header)
                      :let [value (index-map field)]]
                  [field (cond
-                          (= type :int32) (vd/pad-left (vd/int->bytes value) (vd/sizeof type) 0)
+                          (= type :int32) (int32->bytes value)
+                          (= field :signature) (char->bytes value)
                           :else value)])
         entries (for [e (:entries index-map)]
                   (into {} (for [[field type] (partition 2 struct-entry)
                                  :let [value (e field)]]
                              [field (cond
-                                      (= type :int32) (->  value vd/int->bytes
-                                                           (vd/pad-left (vd/sizeof :int32) 0)
-                                                           vec)
+                                      (= type :int32) (int32->bytes value)
                                       (= field :mode) (vd/oct->bytes value)
-                                      (= field :name) (mapv #(byte %) value)
+                                      (= field :name) (char->bytes value)
                                       (= field :sha1) (vd/hex->bytes value)
-                                      :else value)])))]
-    (assoc (into {} header)
-           :entries entries)))
+                                      :else value)])))
+        index-map (assoc (into {} header)
+                         :entries entries)]
+    index-map))
 
 (defn parse-index
   "parse a git index file, e.g. myproject/.git/index"
