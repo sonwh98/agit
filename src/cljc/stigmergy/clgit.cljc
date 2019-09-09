@@ -152,23 +152,25 @@
                        paths
                        rest-paths))
         path (java.nio.file.Paths/get root (into-array more-paths))]
-    (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))))
+    (into {} (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS])))))
 
 (defn add [{:keys [git-root file]}]
   (let [project-root (last (clojure.string/split git-root #"/"))
         index (parse-index (str git-root "/.git/index"))
         entries (:entries index)
         file-attributes (lstat (str git-root "/" file))
-        ctime (get file-attributes "ctime")
+        ctime (file-attributes "ctime")
         ctime-ms (.. ctime toMillis)
         [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)
         ;;ctime-bytes (-> ctime vd/int->bytes (vd/pad-left 8 0))
-        last-modified (get file-attributes "lastModifiedTime")
+        mtime (file-attributes "lastModifiedTime")
+        mtime-ms (.. mtime toMillis)
+        [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
         file-buffer (vd/suck (str git-root "/" file))
         new-entry {:ctime-sec ctime-sec
                    :ctime-nsec ctime-nsec
-                   :mtime-sec (.. last-modified toMillis)
-                   :mtime-nsec (.. last-modified toMillis)
+                   :mtime-sec mtime-sec
+                   :mtime-nsec mtime-nsec
 
                    :dev (get file-attributes "dev")
                    :ino (get file-attributes "ino")
