@@ -187,41 +187,4 @@
                    :file "src/add.clj"}))
   (def bi (index->seq index))
   
-  (def m (:entries index))
-
-
-  
-  (def a (let [paths (clojure.string/split "/tmp/test/src/add.clj" #"/")
-               root-dir (let [fp (first paths)]
-                          (if (= "" fp)
-                            "/"
-                            fp))
-               _ (prn "root" root-dir)
-               path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
-           (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS]))))
-
-  (let [git-root "/tmp/test"
-        project-root (last (clojure.string/split git-root #"/"))        
-        file "src/add.clj"]
-    
-    )
-  (clojure.string/split "src/add.clj" #"/")
-
-  (flatten [[93 116 -96 8]
-            [29 126 22 66]
-            [93 116 -96 8]
-            [29 126 22 66]
-            [0 0 8 2]
-            [0 -78 22 -50]
-            [0, -127, -92]
-            [0 0 3 -24]
-            [0 0 3 -24]
-            [0 0 0 6]
-            [-50, 1, 54, 37, 3, 11, -88, -37, -87, 6, -9, 86, -106, 127, -98,
-             -100, -93, -108, 70, 74]
-            0
-            9
-            [104 101 108 108 111 46 99 108 106]])
-
-
   )
