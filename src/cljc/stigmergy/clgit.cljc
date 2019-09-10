@@ -76,7 +76,9 @@
                    :entry-count entry-count
                    :entries (for [i (range entry-count)]
                               (let [name-len (entry-pt :name-len)
+                                    _ (prn "name-len=" name-len)
                                     file-name (take name-len (entry-pt :name))
+                                    _ (prn "file-name=" (vd/seq->char file-name))
                                     entry {:ctime-sec (vd/seq->int (entry-pt :ctime-sec))
                                            :ctime-nsec (vd/seq->int (entry-pt :ctime-nsec))
                                            :mtime-sec (vd/seq->int (entry-pt :mtime-sec))
@@ -114,16 +116,28 @@
                     (cond
                       (= type :int32) (int32->seq value)
                       (= field :mode) (vd/oct->seq value)
-                      (= field :name) (char->seq value)
+                      (= field :name) (let [name-len (:name-len e)
+                                            padding-count (padding name-len)
+                                            pad (repeat padding-count 0)
+                                            n (concat (char->seq value)
+                                                      pad)]
+                                        (prn "name=" value)
+                                        (prn "name-len=" name-len)
+                                        (prn "padding-count=" padding-count)
+                                        (prn "pad=" pad)
+                                        (prn "n=" n)
+                                        n
+                                        )
                       (= field :sha1) (vd/hex->seq value)
                       :else value)))]
-    (flatten (concat  header entries))))
+    (flatten (concat header entries))))
 
 (defn parse-index
   "parse a git index file, e.g. myproject/.git/index"
   [index-file]
   (let [buffer (vd/suck index-file)]
-    (index->map buffer)))
+    (when buffer
+      (index->map buffer))))
 
 (defn ms->sec-nanosec [ctime-ms]
   (let [ctime-sec (mod (quot ctime-ms 1000)
@@ -149,7 +163,13 @@
 
 (defn add [{:keys [git-root file]}]
   (let [project-root (last (clojure.string/split git-root #"/"))
-        index (parse-index (str git-root "/.git/index"))
+        index (let [index (parse-index (str git-root "/.git/index"))]
+                (if index
+                  index
+                  {:signature '(\D \I \R \C)
+                   :version 2
+                   :entry-count 0
+                   :entries []}))
         entries (:entries index)
         file-attributes (lstat (str git-root "/" file))
         ctime (file-attributes "ctime")
@@ -186,9 +206,10 @@
 
 (comment
   (parse-index "/tmp/test/.git/index")
-
-  (def index (add {:git-root "/tmp/test"
-                   :file "src/add.clj"}))
+  (parse-index "/tmp/test2/.git/index")
+  
+  (def index (add {:git-root "/tmp/test2"
+                   :file "add.clj"}))
   (def bi (index->seq index))
   (squirt "/tmp/test2/.git/index" bi)
   (def index2 (parse-index "/tmp/test2/.git/index"))
