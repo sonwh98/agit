@@ -134,7 +134,7 @@
 (defn parse-index
   "parse a git index file, e.g. myproject/.git/index"
   [index-file]
-  (let [buffer (vd/suck index-file)]
+  (let [buffer (io/suck index-file)]
     (when buffer
       (index->map buffer))))
 
@@ -176,7 +176,7 @@
         mtime (file-attributes "lastModifiedTime")
         mtime-ms (.. mtime toMillis)
         [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
-        file-buffer (vd/suck (str git-root "/" file))
+        file-buffer (io/suck (str git-root "/" file))
         new-entry {:ctime-sec ctime-sec 
                    :ctime-nsec ctime-nsec
                    :mtime-sec mtime-sec 

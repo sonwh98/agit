@@ -41,3 +41,16 @@
 (defn squirt [file seq-of-bytes]
   (with-open [os (jio/output-stream file)]
     (.. os (write (byte-array seq-of-bytes)))))
+
+(defn suck
+  "like slurp but returns raw bytes"
+  [file-name]
+  (let [paths (clojure.string/split file-name #"/")
+        root-dir (let [fp (first paths)]
+                   (if (= "" fp)
+                     "/"
+                     fp))
+        path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
+    (try
+      (java.nio.file.Files/readAllBytes path)
+      (catch Exception ex nil))))
