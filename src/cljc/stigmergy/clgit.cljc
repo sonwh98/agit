@@ -66,7 +66,7 @@
 
 (defonce struct-index (concat struct-header [:entries :byte*]))
 
-(defn index-buffer->map [byte-buffer]
+(defn index->map [byte-buffer]
   (let [index-pt (vd/pointer struct-index byte-buffer)
         entry-count (vd/seq->int (index-pt :entry-count))
         entries (index-pt :entries)
@@ -123,7 +123,7 @@
   "parse a git index file, e.g. myproject/.git/index"
   [index-file]
   (let [buffer (vd/suck index-file)]
-    (index-buffer->map buffer)))
+    (index->map buffer)))
 
 (defn ms->sec-nanosec [ctime-ms]
   (let [ctime-sec (mod (quot ctime-ms 1000)
