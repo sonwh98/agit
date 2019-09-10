@@ -164,8 +164,7 @@
     (into {} (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS])))))
 
 (defn add [{:keys [git-root file]}]
-  (let [project-root (last (clojure.string/split git-root #"/"))
-        index (let [index (parse-index (str git-root "/.git/index"))]
+  (let [index (let [index (parse-index (str git-root "/.git/index"))]
                 (if index
                   index
                   {:signature '(\D \I \R \C)
