@@ -95,7 +95,7 @@
                                 entry))}]
     index-map))
 
-(defn index-map->seq [index-map]
+(defn index->seq [index-map]
   (let [int32->seq (fn [value]
                      (-> value vd/int->seq
                          (vd/pad-left (vd/sizeof :int32) 0)
@@ -185,7 +185,7 @@
 
   (def index (add {:git-root "/tmp/test"
                    :file "src/add.clj"}))
-  (def bi (index-map->seq index))
+  (def bi (index->seq index))
   
   (def m (:entries index))
 
