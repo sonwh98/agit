@@ -76,9 +76,7 @@
                    :entry-count entry-count
                    :entries (for [i (range entry-count)]
                               (let [name-len (entry-pt :name-len)
-                                    _ (prn "name-len=" name-len)
                                     file-name (take name-len (entry-pt :name))
-                                    _ (prn "file-name=" (vd/seq->char file-name))
                                     entry {:ctime-sec (vd/seq->int (entry-pt :ctime-sec))
                                            :ctime-nsec (vd/seq->int (entry-pt :ctime-nsec))
                                            :mtime-sec (vd/seq->int (entry-pt :mtime-sec))
