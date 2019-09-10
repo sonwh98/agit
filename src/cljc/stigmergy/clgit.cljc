@@ -104,28 +104,20 @@
                       (mapv #(byte %) value))
         header (for [[field type] (partition 2 struct-header)
                      :let [value (index-map field)]]
-                 [field (cond
-                          (= type :int32) (int32->bytes value)
-                          (= field :signature) (char->bytes value)
-                          :else value)])
+                 (cond
+                   (= type :int32) (int32->bytes value)
+                   (= field :signature) (char->bytes value)
+                   :else value))
         entries (for [e (:entries index-map)]
-                  (into {} (for [[field type] (partition 2 struct-entry)
-                                 :let [value (e field)]]
-                             [field (cond
-                                      (= type :int32) (int32->bytes value)
-                                      (= field :mode) (vd/oct->bytes value)
-                                      (= field :name) (char->bytes value)
-                                      (= field :sha1) (vd/hex->bytes value)
-                                      :else value)])))
-        header-as-bytes (reduce (fn [acc [field value]]
-                                  (into acc value))
-                                []
-                                header)
-        ;; index-map (assoc (into {} header)
-        ;;                  :entries entries)
-        ]
-    
-    ))
+                  (for [[field type] (partition 2 struct-entry)
+                        :let [value (e field)]]
+                    (cond
+                      (= type :int32) (int32->bytes value)
+                      (= field :mode) (vd/oct->bytes value)
+                      (= field :name) (char->bytes value)
+                      (= field :sha1) (vd/hex->bytes value)
+                      :else value)))]
+    (flatten (concat  header entries))))
 
 (defn parse-index
   "parse a git index file, e.g. myproject/.git/index"
@@ -214,4 +206,22 @@
     
     )
   (clojure.string/split "src/add.clj" #"/")
+
+  (flatten [[93 116 -96 8]
+            [29 126 22 66]
+            [93 116 -96 8]
+            [29 126 22 66]
+            [0 0 8 2]
+            [0 -78 22 -50]
+            [0, -127, -92]
+            [0 0 3 -24]
+            [0 0 3 -24]
+            [0 0 0 6]
+            [-50, 1, 54, 37, 3, 11, -88, -37, -87, 6, -9, 86, -106, 127, -98,
+             -100, -93, -108, 70, 74]
+            0
+            9
+            [104 101 108 108 111 46 99 108 106]])
+
+
   )
