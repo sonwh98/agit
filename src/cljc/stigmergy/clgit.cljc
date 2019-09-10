@@ -36,8 +36,8 @@
   (let [size (count data)
         git-str (str "blob " size "\0" data)]
     (-> git-str
-        vd/sha1-as-bytes
-        vd/bytes->hex)))
+        vd/sha1
+        vd/seq->hex)))
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
@@ -68,54 +68,54 @@
 
 (defn index-buffer->map [byte-buffer]
   (let [index-pt (vd/pointer struct-index byte-buffer)
-        entry-count (vd/bytes->int (index-pt :entry-count))
+        entry-count (vd/seq->int (index-pt :entry-count))
         entries (index-pt :entries)
         entry-pt (vd/pointer struct-entry entries)
-        index-map {:signature (vd/bytes->char (index-pt :signature))
-                   :version (vd/bytes->int (index-pt :version))
+        index-map {:signature (vd/seq->char (index-pt :signature))
+                   :version (vd/seq->int (index-pt :version))
                    :entry-count entry-count
                    :entries (for [i (range entry-count)]
                               (let [name-len (entry-pt :name-len)
                                     file-name (take name-len (entry-pt :name))
-                                    entry {:ctime-sec (vd/bytes->int (entry-pt :ctime-sec))
-                                           :ctime-nsec (vd/bytes->int (entry-pt :ctime-nsec))
-                                           :mtime-sec (vd/bytes->int (entry-pt :mtime-sec))
-                                           :mtime-nsec (vd/bytes->int (entry-pt :mtime-nsec))
-                                           :dev (vd/bytes->int (entry-pt :dev))
-                                           :ino (vd/bytes->int (entry-pt :ino))
-                                           :mode (vd/bytes->oct (entry-pt :mode))
-                                           :uid (vd/bytes->int (entry-pt :uid))
-                                           :gid (vd/bytes->int (entry-pt :gid))
-                                           :size (vd/bytes->int (entry-pt :size))
-                                           :sha1 (vd/bytes->hex (entry-pt :sha1))
+                                    entry {:ctime-sec (vd/seq->int (entry-pt :ctime-sec))
+                                           :ctime-nsec (vd/seq->int (entry-pt :ctime-nsec))
+                                           :mtime-sec (vd/seq->int (entry-pt :mtime-sec))
+                                           :mtime-nsec (vd/seq->int (entry-pt :mtime-nsec))
+                                           :dev (vd/seq->int (entry-pt :dev))
+                                           :ino (vd/seq->int (entry-pt :ino))
+                                           :mode (vd/seq->oct (entry-pt :mode))
+                                           :uid (vd/seq->int (entry-pt :uid))
+                                           :gid (vd/seq->int (entry-pt :gid))
+                                           :size (vd/seq->int (entry-pt :size))
+                                           :sha1 (vd/seq->hex (entry-pt :sha1))
                                            :flags (entry-pt :flags)
                                            :name-len name-len
-                                           :name (vd/bytes->str file-name)}]
+                                           :name (vd/seq->str file-name)}]
                                 (entry-pt + :name name-len (padding name-len))
                                 entry))}]
     index-map))
 
-(defn map->index-buffer [index-map]
-  (let [int32->bytes (fn [value]
-                       (-> value vd/int->bytes
-                           (vd/pad-left (vd/sizeof :int32) 0)
-                           vec))
-        char->bytes (fn [value]
-                      (mapv #(byte %) value))
+(defn index-map->seq [index-map]
+  (let [int32->seq (fn [value]
+                     (-> value vd/int->seq
+                         (vd/pad-left (vd/sizeof :int32) 0)
+                         vec))
+        char->seq (fn [value]
+                    (mapv #(byte %) value))
         header (for [[field type] (partition 2 struct-header)
                      :let [value (index-map field)]]
                  (cond
-                   (= type :int32) (int32->bytes value)
-                   (= field :signature) (char->bytes value)
+                   (= type :int32) (int32->seq value)
+                   (= field :signature) (char->seq value)
                    :else value))
         entries (for [e (:entries index-map)]
                   (for [[field type] (partition 2 struct-entry)
                         :let [value (e field)]]
                     (cond
-                      (= type :int32) (int32->bytes value)
-                      (= field :mode) (vd/oct->bytes value)
-                      (= field :name) (char->bytes value)
-                      (= field :sha1) (vd/hex->bytes value)
+                      (= type :int32) (int32->seq value)
+                      (= field :mode) (vd/oct->seq value)
+                      (= field :name) (char->seq value)
+                      (= field :sha1) (vd/hex->seq value)
                       :else value)))]
     (flatten (concat  header entries))))
 
@@ -155,7 +155,7 @@
         ctime (file-attributes "ctime")
         ctime-ms (.. ctime toMillis)
         [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)
-        ;;ctime-bytes (-> ctime vd/int->bytes (vd/pad-left 8 0))
+        ;;ctime-bytes (-> ctime vd/int->seq (vd/pad-left 8 0))
         mtime (file-attributes "lastModifiedTime")
         mtime-ms (.. mtime toMillis)
         [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
@@ -167,12 +167,12 @@
 
                    :dev (get file-attributes "dev")
                    :ino (get file-attributes "ino")
-                   :mode (vd/bytes->oct (vd/int->bytes (get file-attributes "mode")))
+                   :mode (vd/seq->oct (vd/int->seq (get file-attributes "mode")))
                    
                    :uid (get file-attributes "uid")
                    :gid (get file-attributes "gid")
                    :size (get file-attributes "size")
-                   :sha1 (-> file-buffer vd/sha1-as-bytes vd/bytes->hex)
+                   :sha1 (-> file-buffer vd/sha1 vd/seq->hex)
                    :flags 0
                    :name-len (count file)
                    :name file}
@@ -185,7 +185,7 @@
 
   (def index (add {:git-root "/tmp/test"
                    :file "src/add.clj"}))
-  (def bi (map->index-buffer index))
+  (def bi (index-map->seq index))
   
   (def m (:entries index))
 
