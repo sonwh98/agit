@@ -180,11 +180,16 @@
         index (assoc index :entries entries :entry-count (count entries))]
     index))
 
+(defn squirt [file seq-of-bytes]
+  (with-open [os (jio/output-stream file)]
+    (.. os (write (byte-array seq-of-bytes)))))
+
 (comment
   (parse-index "/tmp/test/.git/index")
 
   (def index (add {:git-root "/tmp/test"
                    :file "src/add.clj"}))
   (def bi (index->seq index))
-  
+  (squirt "/tmp/test2/.git/index" bi)
+  (def index2 (parse-index "/tmp/test2/.git/index"))
   )
