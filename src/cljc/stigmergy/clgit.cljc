@@ -115,21 +115,23 @@
                         :let [value (e field)]]
                     (cond
                       (= type :int32) (int32->seq value)
-                      (= field :mode) (vd/oct->seq value)
+                      (= field :mode) (-> value vd/oct->seq (vd/pad-left (vd/sizeof :int32) 0))
                       (= field :name) (let [name-len (:name-len e)
                                             padding-count (padding name-len)
                                             pad (repeat padding-count 0)
                                             n (concat (char->seq value)
                                                       pad)]
-                                        (prn "name=" value)
-                                        (prn "name-len=" name-len)
-                                        (prn "padding-count=" padding-count)
-                                        (prn "pad=" pad)
-                                        (prn "n=" n)
+                                        ;; (prn "name=" value)
+                                        ;; (prn "name-len=" name-len)
+                                        ;; (prn "padding-count=" padding-count)
+                                        ;; (prn "pad=" pad)
+                                        ;; (prn "n=" n)
                                         n
                                         )
                       (= field :sha1) (vd/hex->seq value)
                       :else value)))]
+    ;;entries
+    #_(flatten header)
     (flatten (concat header entries))))
 
 (defn parse-index
@@ -175,7 +177,6 @@
         ctime (file-attributes "ctime")
         ctime-ms (.. ctime toMillis)
         [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)
-        ;;ctime-bytes (-> ctime vd/int->seq (vd/pad-left 8 0))
         mtime (file-attributes "lastModifiedTime")
         mtime-ms (.. mtime toMillis)
         [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
