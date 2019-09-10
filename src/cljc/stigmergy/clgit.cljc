@@ -1,6 +1,5 @@
 (ns stigmergy.clgit
   (:require [stigmergy.io :as io]
-            [clojure.java.io :as jio]
             [stigmergy.voodoo :as vd])
   (:import [java.nio.file Files LinkOption]
            [java.nio.file.attribute PosixFilePermissions]))
@@ -198,17 +197,18 @@
         index (assoc index :entries entries :entry-count (count entries))]
     index))
 
-(defn squirt [file seq-of-bytes]
-  (with-open [os (jio/output-stream file)]
-    (.. os (write (byte-array seq-of-bytes)))))
-
 (comment
   (parse-index "/tmp/test/.git/index")
   (parse-index "/tmp/test2/.git/index")
   
   (def index (add {:git-root "/tmp/test2"
                    :file "add.clj"}))
+  
   (def bi (index->seq index))
-  (squirt "/tmp/test2/.git/index" bi)
+  (io/squirt "/tmp/test2/.git/index" bi)
   (def index2 (parse-index "/tmp/test2/.git/index"))
+
+  (def index (add {:git-root "/tmp/test2"
+                   :file "mul.clj"}))
+  (->> index index->seq (io/squirt "/tmp/test2/.git/index") )
   )

@@ -1,6 +1,7 @@
 (ns stigmergy.io
   (:require [taoensso.timbre :as log :include-macros true]
-            [clojure.core.async :as a :include-macros true]))
+            [clojure.core.async :as a :include-macros true]
+            [clojure.java.io :as jio]))
 
 (defn mkdir
   ([path options cb]
@@ -37,4 +38,6 @@
    )
   )
 
-
+(defn squirt [file seq-of-bytes]
+  (with-open [os (jio/output-stream file)]
+    (.. os (write (byte-array seq-of-bytes)))))
