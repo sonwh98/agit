@@ -160,8 +160,8 @@
         path (java.nio.file.Paths/get root (into-array more-paths))]
     (into {} (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS])))))
 
-(defn add [git-root file]
-  (let [index (let [index (parse-index (str git-root "/.git/index"))]
+(defn add [project-root & files]
+  (let [index (let [index (parse-index (str project-root "/.git/index"))]
                 (if index
                   index
                   {:signature '(\D \I \R \C)
@@ -169,33 +169,34 @@
                    :entry-count 0
                    :entries []}))
         entries (:entries index)
-        file-attributes (lstat (str git-root "/" file))
-        ctime (file-attributes "ctime")
-        ctime-ms (.. ctime toMillis)
-        [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)
-        mtime (file-attributes "lastModifiedTime")
-        mtime-ms (.. mtime toMillis)
-        [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
-        file-buffer (io/suck (str git-root "/" file))
-        new-entry {:ctime-sec ctime-sec 
-                   :ctime-nsec ctime-nsec
-                   :mtime-sec mtime-sec 
-                   :mtime-nsec mtime-nsec 
+        new-entries (for [file files]
+                      (let [file-attributes (lstat (str project-root "/" file))
+                            ctime (file-attributes "ctime")
+                            ctime-ms (.. ctime toMillis)
+                            [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)
+                            mtime (file-attributes "lastModifiedTime")
+                            mtime-ms (.. mtime toMillis)
+                            [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
+                            file-buffer (io/suck (str project-root "/" file))
+                            new-entry {:ctime-sec ctime-sec 
+                                       :ctime-nsec ctime-nsec
+                                       :mtime-sec mtime-sec 
+                                       :mtime-nsec mtime-nsec 
 
-                   :dev (get file-attributes "dev")
-                   :ino (get file-attributes "ino")
-                   :mode (vd/seq->oct (vd/int->seq (get file-attributes "mode")))
-                   
-                   :uid (get file-attributes "uid")
-                   :gid (get file-attributes "gid")
-                   :size (get file-attributes "size")
-                   :sha1 (-> file-buffer vd/sha1 vd/seq->hex)
-                   :flags 0
-                   :name-len (count file)
-                   :name file}
-        entries (sort-by :name (conj entries new-entry))
-        index (assoc index :entries entries :entry-count (count entries))]
-    index))
+                                       :dev (get file-attributes "dev")
+                                       :ino (get file-attributes "ino")
+                                       :mode (vd/seq->oct (vd/int->seq (get file-attributes "mode")))
+                                       
+                                       :uid (get file-attributes "uid")
+                                       :gid (get file-attributes "gid")
+                                       :size (get file-attributes "size")
+                                       :sha1 (-> file-buffer vd/sha1 vd/seq->hex)
+                                       :flags 0
+                                       :name-len (count file)
+                                       :name file}]
+                        new-entry))
+        entries (sort-by :name (concat entries new-entries))]
+    (assoc index :entries entries :entry-count (count entries))))
 
 (comment
   (parse-index "/tmp/test/.git/index")
@@ -203,6 +204,8 @@
   (def index (parse-index "/tmp/test2/.git/index"))
 
   (def index (add "/tmp/test2"
-                  "min.clj"))
+                  "min.clj"
+                  "mul.clj"
+                  "add.clj"))
   (->> index index->seq (io/squirt "/tmp/test2/.git/index") )
   )
