@@ -160,7 +160,7 @@
         path (java.nio.file.Paths/get root (into-array more-paths))]
     (into {} (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS])))))
 
-(defn add [{:keys [git-root file]}]
+(defn add [git-root file]
   (let [index (let [index (parse-index (str git-root "/.git/index"))]
                 (if index
                   index
@@ -199,16 +199,10 @@
 
 (comment
   (parse-index "/tmp/test/.git/index")
-  (parse-index "/tmp/test2/.git/index")
   
-  (def index (add {:git-root "/tmp/test2"
-                   :file "add.clj"}))
-  
-  (def bi (index->seq index))
-  (io/squirt "/tmp/test2/.git/index" bi)
-  (def index2 (parse-index "/tmp/test2/.git/index"))
+  (def index (parse-index "/tmp/test2/.git/index"))
 
-  (def index (add {:git-root "/tmp/test2"
-                   :file "mul.clj"}))
+  (def index (add "/tmp/test2"
+                  "min.clj"))
   (->> index index->seq (io/squirt "/tmp/test2/.git/index") )
   )
