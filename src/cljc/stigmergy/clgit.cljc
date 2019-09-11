@@ -1,8 +1,6 @@
 (ns stigmergy.clgit
   (:require [stigmergy.io :as io]
-            [stigmergy.voodoo :as vd])
-  (:import [java.nio.file Files LinkOption]
-           [java.nio.file.attribute PosixFilePermissions]))
+            [stigmergy.voodoo :as vd]))
 
 (defn init
   ([{:keys [dir]}]
@@ -94,7 +92,9 @@
                                 entry))}]
     index-map))
 
-(defn index->seq [index-map]
+(defn index->seq
+  "convert index map into a sequence of bytes"
+  [index-map]
   (let [int32->seq (fn [value]
                      (-> value vd/int->seq
                          (vd/pad-left (vd/sizeof :int32) 0)
@@ -115,20 +115,12 @@
                       (= field :mode) (-> value vd/oct->seq (vd/pad-left (vd/sizeof :int32) 0))
                       (= field :name) (let [name-len (:name-len e)
                                             padding-count (padding name-len)
-                                            pad (repeat padding-count 0)
-                                            n (concat (char->seq value)
-                                                      pad)]
-                                        ;; (prn "name=" value)
-                                        ;; (prn "name-len=" name-len)
-                                        ;; (prn "padding-count=" padding-count)
-                                        ;; (prn "pad=" pad)
-                                        ;; (prn "n=" n)
-                                        n
-                                        )
+                                            pad (repeat padding-count 0)]
+                                        (concat (char->seq value)
+                                                pad))
+                      
                       (= field :sha1) (vd/hex->seq value)
                       :else value)))]
-    ;;entries
-    #_(flatten header)
     (flatten (concat header entries))))
 
 (defn parse-index
@@ -146,20 +138,6 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
-(defn lstat [file]
-  (let [paths (clojure.string/split file #"/")
-        path0 (first paths)
-        root (cond
-               (clojure.string/blank? path0) "/"
-               (= 1 (count paths)) "."
-               :else path0)
-        more-paths (let [rest-paths (rest paths)]
-                     (if (empty? rest-paths)
-                       paths
-                       rest-paths))
-        path (java.nio.file.Paths/get root (into-array more-paths))]
-    (into {} (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS])))))
-
 (defn add [project-root & files]
   (let [index (let [index (parse-index (str project-root "/.git/index"))]
                 (if index
@@ -170,7 +148,7 @@
                    :entries []}))
         entries (:entries index)
         new-entries (for [file files]
-                      (let [file-attributes (lstat (str project-root "/" file))
+                      (let [file-attributes (io/lstat (str project-root "/" file))
                             ctime (file-attributes "ctime")
                             ctime-ms (.. ctime toMillis)
                             [ctime-sec ctime-nsec] (ms->sec-nanosec ctime-ms)

@@ -1,7 +1,9 @@
 (ns stigmergy.io
   (:require [taoensso.timbre :as log :include-macros true]
             [clojure.core.async :as a :include-macros true]
-            [clojure.java.io :as jio]))
+            [clojure.java.io :as jio])
+  (:import [java.nio.file Files LinkOption]
+           [java.nio.file.attribute PosixFilePermissions]))
 
 (defn mkdir
   ([path options cb]
@@ -54,3 +56,17 @@
     (try
       (java.nio.file.Files/readAllBytes path)
       (catch Exception ex nil))))
+
+(defn lstat [file]
+  (let [paths (clojure.string/split file #"/")
+        path0 (first paths)
+        root (cond
+               (clojure.string/blank? path0) "/"
+               (= 1 (count paths)) "."
+               :else path0)
+        more-paths (let [rest-paths (rest paths)]
+                     (if (empty? rest-paths)
+                       paths
+                       rest-paths))
+        path (java.nio.file.Paths/get root (into-array more-paths))]
+    (into {} (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS])))))
