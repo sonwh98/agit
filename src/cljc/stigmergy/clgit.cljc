@@ -63,8 +63,8 @@
 
 (defonce struct-index (concat struct-header [:entries :byte*]))
 
-(defn index->map [byte-buffer]
-  (let [index-pt (vd/pointer struct-index byte-buffer)
+(defn index->map [seq-of-bytes]
+  (let [index-pt (vd/pointer struct-index seq-of-bytes)
         entry-count (vd/seq->int (index-pt :entry-count))
         entries (index-pt :entries)
         entry-pt (vd/pointer struct-entry entries)
@@ -93,7 +93,7 @@
     index-map))
 
 (defn index->seq
-  "convert index map into a sequence of bytes"
+  "convert index map by stripping out the keys and flattening the values into a sequence of bytes"
   [index-map]
   (let [int32->seq (fn [value]
                      (-> value vd/int->seq
@@ -124,7 +124,8 @@
     (flatten (concat header entries))))
 
 (defn parse-index
-  "parse a git index file, e.g. myproject/.git/index"
+  "parse a git index file, e.g. myproject/.git/index, into a map. Format of git index file is at
+  https://github.com/git/git/blob/master/Documentation/technical/index-format.txt"
   [index-file]
   (let [buffer (io/suck index-file)]
     (when buffer
