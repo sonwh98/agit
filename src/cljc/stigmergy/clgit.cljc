@@ -63,7 +63,9 @@
 
 (defonce struct-index (concat struct-header [:entries :byte*]))
 
-(defn index->map [seq-of-bytes]
+(defn git-index-as-seq->map
+  "convert sequence of bytes into a map with keys :signature :version :entry-count :entries"
+  [seq-of-bytes]
   (let [index-pt (vd/pointer struct-index seq-of-bytes)
         entry-count (vd/seq->int (index-pt :entry-count))
         entries (index-pt :entries)
@@ -92,8 +94,8 @@
                                 entry))}]
     index-map))
 
-(defn index->seq
-  "convert index map by stripping out the keys and flattening the values into a sequence of bytes"
+(defn git-index-as-map->seq
+  "remove out the keys from index-map and flatten the values into a sequence of bytes"
   [index-map]
   (let [int32->seq (fn [value]
                      (-> value vd/int->seq
@@ -123,13 +125,13 @@
                       :else value)))]
     (flatten (concat header entries))))
 
-(defn parse-index
+(defn parse-git-index
   "parse a git index file, e.g. myproject/.git/index, into a map. Format of git index file is at
   https://github.com/git/git/blob/master/Documentation/technical/index-format.txt"
   [index-file]
   (let [buffer (io/suck index-file)]
     (when buffer
-      (index->map buffer))))
+      (git-index-as-seq->map buffer))))
 
 (defn ms->sec-nanosec [ctime-ms]
   (let [ctime-sec (mod (quot ctime-ms 1000)
@@ -140,7 +142,7 @@
     [ctime-sec ctime-nsec]))
 
 (defn add [project-root & files]
-  (let [index (let [index (parse-index (str project-root "/.git/index"))]
+  (let [index (let [index (parse-git-index (str project-root "/.git/index"))]
                 (if index
                   index
                   {:signature '(\D \I \R \C)
@@ -178,13 +180,12 @@
     (assoc index :entries entries :entry-count (count entries))))
 
 (comment
-  (parse-index "/tmp/test/.git/index")
-  
-  (def index (parse-index "/tmp/test2/.git/index"))
+  (def index (parse-git-index "/tmp/test2/.git/index"))
 
-  (def index (add "/tmp/test2"
-                  "min.clj"
-                  "mul.clj"
-                  "add.clj"))
-  (->> index index->seq (io/squirt "/tmp/test2/.git/index") )
+  (let [project-root "/home/sto/tmp/test"]
+    (def index (add project-root
+                    "src/min.clj"
+                    "src/mul.clj"
+                    "src/add.clj")))
+  (->> index git-index-as-map->seq (io/squirt "/tmp/test2/.git/index") )
   )
