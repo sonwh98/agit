@@ -120,7 +120,6 @@
                                             pad (repeat padding-count 0)]
                                         (concat (char->seq value)
                                                 pad))
-                      
                       (= field :sha1) (vd/hex->seq value)
                       :else value)))]
     (flatten (concat header entries))))
@@ -141,6 +140,10 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
+(defn write-blob [sha1 content-as-seq-of-bytes]
+  (prn (type content-as-seq-of-bytes))
+  )
+
 (defn add [project-root & files]
   (let [index (let [index (parse-git-index (str project-root "/.git/index"))]
                 (if index
@@ -158,7 +161,9 @@
                             mtime (file-attributes "lastModifiedTime")
                             mtime-ms (.. mtime toMillis)
                             [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
-                            file-buffer (io/suck (str project-root "/" file))
+                            file-path (str project-root "/" file)
+                            file-content (io/suck file-path)
+                            sha1-as-bytes (-> file-content vd/sha1 )
                             new-entry {:ctime-sec ctime-sec 
                                        :ctime-nsec ctime-nsec
                                        :mtime-sec mtime-sec 
@@ -171,21 +176,26 @@
                                        :uid (get file-attributes "uid")
                                        :gid (get file-attributes "gid")
                                        :size (get file-attributes "size")
-                                       :sha1 (-> file-buffer vd/sha1 vd/seq->hex)
+                                       :sha1 (vd/seq->hex sha1-as-bytes)
                                        :flags 0
                                        :name-len (count file)
                                        :name file}]
+                        (write-blob sha1-as-bytes file-content)
                         new-entry))
-        entries (sort-by :name (concat entries new-entries))]
-    (assoc index :entries entries :entry-count (count entries))))
+        entries (sort-by :name (concat entries new-entries))
+        index (assoc index :entries entries :entry-count (count entries))]
+    (->> index git-index-as-map->seq
+         (io/squirt (str project-root "/.git/index")))
+    
+    index
+    ))
 
 (comment
-  (def index (parse-git-index "/tmp/test2/.git/index"))
+  (def project-root "/home/sto/tmp/test")
+  (def index (parse-git-index (str project-root "/.git/index")))
 
-  (let [project-root "/home/sto/tmp/test"]
-    (def index (add project-root
-                    "src/min.clj"
-                    "src/mul.clj"
-                    "src/add.clj")))
-  (->> index git-index-as-map->seq (io/squirt "/tmp/test2/.git/index") )
+  (def index (add project-root
+                  "mul.clj"))
+  
+  
   )
