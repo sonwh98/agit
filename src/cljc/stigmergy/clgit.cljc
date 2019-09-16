@@ -29,9 +29,13 @@
   ([]
    (init {})))
 
-(defn hash-object [data]
-  (let [size (count data)
-        git-str (str "blob " size "\0" data)]
+(defn hash-object [a-seq]
+  (let [size (count a-seq)
+        empty-space 32
+        git-str (vd/str->seq (str "blob " size "\0"))
+        git-str (concat git-str (if (string? a-seq)
+                                  (vd/str->seq a-seq)
+                                  a-seq))]
     (-> git-str
         vd/sha1
         vd/seq->hex)))
@@ -141,7 +145,11 @@
     [ctime-sec ctime-nsec]))
 
 (defn write-blob [sha1 content-as-seq-of-bytes]
-  (prn (type content-as-seq-of-bytes))
+  (let [size (count content-as-seq-of-bytes)
+        blob (concat [\b \l \o \b 32 size \0] content-as-seq-of-bytes)
+        blob-bytes (byte-array blob)]
+    
+    )
   )
 
 (defn add [project-root & files]
@@ -196,6 +204,5 @@
 
   (def index (add project-root
                   "mul.clj"))
-  
-  
+
   )
