@@ -30,7 +30,7 @@
    (init {})))
 
 (defn hash-header
-  "git hash-object does not hash the raw bytes but adds a header before the raw bytes before sha1 hashing.
+  "git hash-object does not hash the raw bytes but adds a header before sha1 hashing.
    https://stackoverflow.com/questions/552659/how-to-assign-a-git-sha1s-to-a-file-without-git/552725#552725"
   [obj-type a-seq]
   (let [size (count a-seq)]
