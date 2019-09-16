@@ -67,8 +67,9 @@
 
 (defonce struct-index (concat struct-header [:entries :byte*]))
 
-(defn git-index-as-seq->map
-  "convert sequence of bytes into a map with keys :signature :version :entry-count :entries"
+(defn index-seq->map
+  "convert git index as sequence of bytes into a map with keys
+  :signature :version :entry-count :entries"
   [seq-of-bytes]
   (let [index-pt (vd/pointer struct-index seq-of-bytes)
         entry-count (vd/seq->int (index-pt :entry-count))
@@ -98,8 +99,9 @@
                                 entry))}]
     index-map))
 
-(defn git-index-as-map->seq
-  "remove out the keys from index-map and flatten the values into a sequence of bytes"
+(defn index-map->seq
+  "convert git index in a structured map into a sequence of bytes by stripping out the keys
+  from index-map and flatten the values into a sequence of bytes"
   [index-map]
   (let [int32->seq (fn [value]
                      (-> value vd/int->seq
@@ -134,7 +136,7 @@
   [index-file]
   (let [buffer (io/suck index-file)]
     (when buffer
-      (git-index-as-seq->map buffer))))
+      (index-seq->map buffer))))
 
 (defn ms->sec-nanosec [ctime-ms]
   (let [ctime-sec (mod (quot ctime-ms 1000)
@@ -192,7 +194,7 @@
                         new-entry))
         entries (sort-by :name (concat entries new-entries))
         index (assoc index :entries entries :entry-count (count entries))]
-    (->> index git-index-as-map->seq
+    (->> index index-map->seq
          (io/squirt (str project-root "/.git/index")))
     
     index
