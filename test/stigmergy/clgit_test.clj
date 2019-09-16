@@ -23,8 +23,8 @@
     (let [cwd (System/getProperty "user.dir")
           jpg-file (str cwd "/test/lambda.jpg")
           jpg-content (io/suck jpg-file)]
-      (is (= "0a881c05c740e89bb192dac0d85877512cdc2d67")
-          (git/hash-object jpg-content))))
+      (is (= "0a881c05c740e89bb192dac0d85877512cdc2d67"
+             (git/hash-object jpg-content)))))
   )
 
 (deftest io-tests
