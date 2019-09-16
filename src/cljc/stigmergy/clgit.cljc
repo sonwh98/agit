@@ -29,19 +29,27 @@
   ([]
    (init {})))
 
-(defn write-object [obj-type a-seq]
-  (let [size (count a-seq)
-        header (vd/str->seq (str obj-type " " size "\0"))
-        git-seq (concat header (if (string? a-seq)
-                                 (vd/str->seq a-seq)
-                                 a-seq))]
-    (-> git-seq
-        vd/sha1
-        vd/seq->hex)))
+(defn hash-object
+  ([obj-type a-seq]
+   (let [size (count a-seq)
+         header (vd/str->seq (str obj-type " " size "\0"))
+         git-seq (concat header (if (string? a-seq)
+                                  (vd/str->seq a-seq)
+                                  a-seq))
+         sha1-hex-str (-> git-seq
+                          vd/sha1
+                          vd/seq->hex)]
+     sha1-hex-str))
+  ([a-seq]
+   (hash-object "blob" a-seq)))
 
-(defn hash-object [a-seq]
-  (write-object "blob" a-seq))
-
+(defn write-blob [sha1 content-as-seq-of-bytes]
+  (let [size (count content-as-seq-of-bytes)
+        blob (hash-object "blob" content-as-seq-of-bytes)
+        blob-bytes (byte-array blob)]
+    
+    )
+  )
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
@@ -149,13 +157,7 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
-(defn write-blob [sha1 content-as-seq-of-bytes]
-  (let [size (count content-as-seq-of-bytes)
-        blob (concat [\b \l \o \b 32 size \0] content-as-seq-of-bytes)
-        blob-bytes (byte-array blob)]
-    
-    )
-  )
+
 
 (defn add [project-root & files]
   (let [index (let [index (parse-git-index (str project-root "/.git/index"))]
