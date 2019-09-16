@@ -29,14 +29,20 @@
   ([]
    (init {})))
 
+(defn hash-header
+  "git hash-object does not hash the raw bytes but adds a header before the raw bytes before sha1 hashing.
+   https://stackoverflow.com/questions/552659/how-to-assign-a-git-sha1s-to-a-file-without-git/552725#552725"
+  [obj-type a-seq]
+  (let [size (count a-seq)]
+    (vd/str->seq (str obj-type " " size "\0"))))
+
 (defn hash-object
   ([obj-type a-seq]
-   (let [size (count a-seq)
-         header (vd/str->seq (str obj-type " " size "\0"))
-         git-seq (concat header (if (string? a-seq)
-                                  (vd/str->seq a-seq)
-                                  a-seq))
-         sha1-hex-str (-> git-seq
+   (let [header (hash-header obj-type a-seq)
+         seq-to-hash (concat header (if (string? a-seq)
+                                      (vd/str->seq a-seq)
+                                      a-seq))
+         sha1-hex-str (-> seq-to-hash
                           vd/sha1
                           vd/seq->hex)]
      sha1-hex-str))
