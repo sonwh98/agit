@@ -29,16 +29,19 @@
   ([]
    (init {})))
 
-(defn hash-object [a-seq]
+(defn write-object [obj-type a-seq]
   (let [size (count a-seq)
-        empty-space 32
-        git-str (vd/str->seq (str "blob " size "\0"))
-        git-str (concat git-str (if (string? a-seq)
-                                  (vd/str->seq a-seq)
-                                  a-seq))]
-    (-> git-str
+        header (vd/str->seq (str obj-type " " size "\0"))
+        git-seq (concat header (if (string? a-seq)
+                                 (vd/str->seq a-seq)
+                                 a-seq))]
+    (-> git-seq
         vd/sha1
         vd/seq->hex)))
+
+(defn hash-object [a-seq]
+  (write-object "blob" a-seq))
+
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
