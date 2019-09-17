@@ -70,6 +70,7 @@
 
 (defn unzip [zipped-bytes]
   (with-open [zip-ins (-> zipped-bytes
+                          byte-array
                           jio/input-stream
                           (java.util.zip.InflaterInputStream.))
               b-out (java.io.ByteArrayOutputStream.)]
