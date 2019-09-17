@@ -69,12 +69,12 @@
                (Integer/parseInt size)))
     content))
 
-(defn write-blob [content-as-seq-of-bytes]
+(defn write-blob [project-root content-as-seq-of-bytes]
   (let [size (count content-as-seq-of-bytes)
         sha1-hex-str (hash-object "blob" content-as-seq-of-bytes)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
-        file-path (util/format "%s/%s" two other)]
+        file-path (util/format "%s/.git/objects/%s/%s" project-root two other)]
     file-path))
 
 (defn padding [n]
@@ -187,7 +187,8 @@
 
 
 (defn add [project-root & files]
-  (let [index (let [index (parse-git-index (str project-root "/.git/index"))]
+  (let [git-dir (str project-root "/.git")
+        index (let [index (parse-git-index (str git-dir "/index"))]
                 (if index
                   index
                   {:signature '(\D \I \R \C)
@@ -222,7 +223,7 @@
                                        :flags 0
                                        :name-len (count file)
                                        :name file}]
-                        (write-blob file-content)
+                        (write-blob project-root file-content)
                         new-entry))
         entries (sort-by :name (concat entries new-entries))
         index (assoc index :entries entries :entry-count (count entries))]
@@ -239,6 +240,6 @@
   (def index (add project-root
                   "mul.clj"))
 
-  (write-blob "test content\n")
+  (write-blob project-root "test content\n")
 
   )
