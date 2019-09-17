@@ -74,7 +74,7 @@
                           (java.util.zip.InflaterInputStream.))
               b-out (java.io.ByteArrayOutputStream.)]
     (jio/copy zip-ins b-out)
-    (.. b-out toByteArray)))
+    (vec (.. b-out toByteArray))))
 
 (defn unzip-file [file-path]
   (-> file-path suck unzip))
