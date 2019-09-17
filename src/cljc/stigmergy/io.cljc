@@ -48,16 +48,11 @@
 
 (defn suck
   "like slurp but returns raw bytes"
-  [file-name]
-  (let [paths (clojure.string/split file-name #"/")
-        root-dir (let [fp (first paths)]
-                   (if (= "" fp)
-                     "/"
-                     fp))
-        path (java.nio.file.Paths/get root-dir (into-array (rest paths)))]
-    (try
-      (java.nio.file.Files/readAllBytes path)
-      (catch Exception ex nil))))
+  [file-path]
+  (with-open [f-in (jio/input-stream file-path)
+              b-out (java.io.ByteArrayOutputStream.)]
+    (jio/copy f-in b-out)
+    (.. b-out toByteArray)))
 
 (defn lstat [file]
   (let [paths (clojure.string/split file #"/")
