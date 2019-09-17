@@ -47,12 +47,12 @@
       (.. os (write (byte-array seq-of-bytes))))))
 
 (defn suck
-  "like slurp but returns raw bytes"
+  "like slurp but returns vector of bytes"
   [file-path]
   (with-open [f-in (jio/input-stream file-path)
               b-out (java.io.ByteArrayOutputStream.)]
     (jio/copy f-in b-out)
-    (.. b-out toByteArray)))
+    (vec (.. b-out toByteArray))))
 
 (defn lstat [file]
   (let [paths (clojure.string/split file #"/")
