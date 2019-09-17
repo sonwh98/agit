@@ -1,6 +1,7 @@
 (ns stigmergy.clgit
   (:require [stigmergy.io :as io]
-            [stigmergy.voodoo :as vd]))
+            [stigmergy.voodoo :as vd]
+            [stigmergy.tily :as util]))
 
 (defn init
   ([{:keys [dir]}]
@@ -29,19 +30,22 @@
   ([]
    (init {})))
 
-(defn hash-header
-  "git hash-object does not hash the raw bytes but adds a header before sha1 hashing.
-   https://stackoverflow.com/questions/552659/how-to-assign-a-git-sha1s-to-a-file-without-git/552725#552725"
+(defn git-object-header
   [obj-type a-seq]
   (let [size (count a-seq)]
     (vd/str->seq (str obj-type " " size "\0"))))
 
+(defn to-seq [a-seq]
+  (if (string? a-seq)
+    (vd/str->seq a-seq)
+    a-seq))
+
 (defn hash-object
+  "git hash-object does not hash the raw bytes but adds a header before sha1 hashing.
+   https://stackoverflow.com/questions/552659/how-to-assign-a-git-sha1s-to-a-file-without-git/552725#552725"
   ([obj-type a-seq]
-   (let [header (hash-header obj-type a-seq)
-         seq-to-hash (concat header (if (string? a-seq)
-                                      (vd/str->seq a-seq)
-                                      a-seq))
+   (let [header (git-object-header obj-type a-seq)
+         seq-to-hash (concat header (to-seq a-seq))
          sha1-hex-str (-> seq-to-hash
                           vd/sha1
                           vd/seq->hex)]
@@ -49,13 +53,29 @@
   ([a-seq]
    (hash-object "blob" a-seq)))
 
-(defn write-blob [sha1 content-as-seq-of-bytes]
+(defn wrap [object-type a-seq]
+  (let [header (git-object-header object-type a-seq)]
+    (concat header (to-seq a-seq))))
+
+(defn unwrap [a-seq]
+  (let [space 32 ;;ASCII value of space
+        s (.indexOf a-seq space) ;;first space
+        null 0
+        n (.indexOf a-seq null)
+        obj-type (vd/seq->str (take s a-seq))
+        size (vd/seq->str (util/take-between (inc s) n a-seq))
+        content (drop (inc n) a-seq)]
+    (assert (= (count content)
+               (Integer/parseInt size)))
+    content))
+
+(defn write-blob [content-as-seq-of-bytes]
   (let [size (count content-as-seq-of-bytes)
-        blob (hash-object "blob" content-as-seq-of-bytes)
-        blob-bytes (byte-array blob)]
-    
-    )
-  )
+        sha1-hex-str (hash-object "blob" content-as-seq-of-bytes)
+        two (vd/seq->str (take 2 sha1-hex-str))
+        other (vd/seq->str (drop 2 sha1-hex-str))
+        file-path (util/format "%s/%s" two other)]
+    file-path))
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
@@ -111,7 +131,8 @@
                                            :sha1 (vd/seq->hex (entry-pt :sha1))
                                            :flags (entry-pt :flags)
                                            :name-len name-len
-                                           :name (vd/seq->str file-name)}]
+                                           :name (vd/seq->str file-name) 
+                                           }]
                                 (entry-pt + :name name-len (padding name-len))
                                 entry))}]
     index-map))
@@ -201,7 +222,7 @@
                                        :flags 0
                                        :name-len (count file)
                                        :name file}]
-                        (write-blob sha1-as-bytes file-content)
+                        (write-blob file-content)
                         new-entry))
         entries (sort-by :name (concat entries new-entries))
         index (assoc index :entries entries :entry-count (count entries))]
@@ -217,5 +238,7 @@
 
   (def index (add project-root
                   "mul.clj"))
+
+  (write-blob "test content\n")
 
   )

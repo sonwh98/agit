@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [stigmergy.clgit :as git]
             [stigmergy.io :as io]
+            [stigmergy.voodoo :as vd]
             [clojure.core.async :as a :include-macros true]))
 
 
@@ -25,7 +26,15 @@
           jpg-content (io/suck jpg-file)]
       (is (= "0a881c05c740e89bb192dac0d85877512cdc2d67"
              (git/hash-object jpg-content)))))
-  )
+
+  (testing "wrap/unrap content"
+    (let [content "abc"
+          git-object (git/wrap "blob" content)]
+      (is (= '(98 108 111 98 32 51 0 97 98 99)
+             git-object))
+
+      (is (= content
+             (vd/seq->str (git/unwrap git-object)))))))
 
 (deftest io-tests
   (testing "mkdir"
