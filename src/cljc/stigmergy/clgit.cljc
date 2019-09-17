@@ -53,17 +53,6 @@
   ([a-seq]
    (hash-object "blob" a-seq)))
 
-(defn unzip [file-path]
-  (let [f (io/suck file-path)
-        ins (-> f
-                (java.io.ByteArrayInputStream.)
-                (java.util.zip.InflaterInputStream.))
-        data (byte-array 10)]
-    (.. ins (read data))
-    (vd/seq->str (seq data))
-    )
-  )
-
 (defn wrap [object-type a-seq]
   (let [header (git-object-header object-type a-seq)]
     (concat header (to-seq a-seq))))
@@ -199,8 +188,6 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
-
-
 (defn add [project-root & files]
   (let [git-dir (str project-root "/.git")
         index (let [index (parse-git-index (str git-dir "/index"))]
@@ -244,9 +231,7 @@
         index (assoc index :entries entries :entry-count (count entries))]
     (->> index index-map->seq
          (io/squirt (str project-root "/.git/index")))
-    
-    index
-    ))
+    index))
 
 (comment
   (def project-root "/home/sto/tmp/test")
@@ -264,11 +249,14 @@
     (prn (vd/seq->str (seq data)))
     )
 
-  (unzip "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7")
+  (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
+      io/unzip-file
+      vd/seq->str)
   
   (write-blob project-root "test content\n")
   (let [f (java.io.File. "/home/sto/tmp/test/.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4")]
+    (prn "len=" (.. f length))
     (.. f getParentFile mkdirs)
     )
-
+  
   )
