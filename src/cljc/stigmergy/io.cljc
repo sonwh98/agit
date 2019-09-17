@@ -41,8 +41,10 @@
   )
 
 (defn squirt [file seq-of-bytes]
-  (with-open [os (jio/output-stream file)]
-    (.. os (write (byte-array seq-of-bytes)))))
+  (let [f (java.io.File. file)]
+    (.. f getParentFile mkdirs)
+    (with-open [os (jio/output-stream file)]
+      (.. os (write (byte-array seq-of-bytes))))))
 
 (defn suck
   "like slurp but returns raw bytes"
