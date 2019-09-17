@@ -58,7 +58,6 @@
     (concat header (to-seq a-seq))))
 
 (defn unwrap [a-seq]
-  (prn "a-seq=" a-seq)
   (let [space 32 ;;ASCII value of space
         s (.indexOf a-seq space) ;;first space
         null 0
@@ -252,11 +251,19 @@
   (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
       io/unzip-file
       vd/seq->str)
-  
+
+  (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
+      io/suck
+      io/unzip
+      vd/seq->str)
+
+  (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
+      io/suck
+      io/unzip
+      unwrap
+      vd/seq->str)
+
   (write-blob project-root "test content\n")
-  (let [f (java.io.File. "/home/sto/tmp/test/.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4")]
-    (prn "len=" (.. f length))
-    (.. f getParentFile mkdirs)
-    )
-  
+
+
   )
