@@ -75,10 +75,9 @@
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
-        content-as-seq-of-bytes (if (string? content)
-                                  (vd/str->seq content)
-                                  content)]
-    (io/squirt file-path content-as-seq-of-bytes)))
+        zip-content (->> content to-seq (wrap "blob") (io/zip file-path))]
+    (io/squirt file-path zip-content)
+    file-path))
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
@@ -239,15 +238,6 @@
   (def index (add project-root
                   "mul.clj"))
 
-  (let [f (io/suck "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7")
-        ins (-> f
-                (java.io.ByteArrayInputStream.)
-                (java.util.zip.InflaterInputStream.))
-        data (byte-array 10)]
-    (.. ins (read data))
-    (prn (vd/seq->str (seq data)))
-    )
-
   (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
       io/unzip-file
       vd/seq->str)
@@ -257,13 +247,17 @@
       io/unzip
       vd/seq->str)
 
-  (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
-      io/suck
+  (-> 
+   "/home/sto/tmp/test/.git/objects/10/8975088a1b6faee481d23d9ea2fae4ca0a2daf"
+   io/suck
+   io/unzip
+   unwrap
+   vd/seq->str)
+
+  
+  (write-blob project-root (vd/str->seq "test content4\n"))
+
+  (-> "/home/sto/tmp/test/.git/objects/10/8975088a1b6faee481d23d9ea2fae4ca0a2daf"
       io/unzip
-      unwrap
-      vd/seq->str)
-
-  (write-blob project-root "test content\n")
-
-
+      )
   )

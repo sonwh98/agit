@@ -79,3 +79,13 @@
 
 (defn unzip-file [file-path]
   (-> file-path suck unzip))
+
+(defn zip [file-path a-seq]
+  (let [zip-entry (java.util.zip.ZipEntry. file-path)]
+    (.. zip-entry (setSize (count a-seq)))
+    
+    (with-open [b-os (java.io.ByteArrayOutputStream.)
+                zip-os (java.util.zip.ZipOutputStream. b-os)]
+      (.. zip-os (putNextEntry zip-entry))
+      (.. zip-os (write (byte-array a-seq)))
+      (.. b-os toByteArray))))
