@@ -53,11 +53,23 @@
   ([a-seq]
    (hash-object "blob" a-seq)))
 
+(defn unzip [file-path]
+  (let [f (io/suck file-path)
+        ins (-> f
+                (java.io.ByteArrayInputStream.)
+                (java.util.zip.InflaterInputStream.))
+        data (byte-array 10)]
+    (.. ins (read data))
+    (vd/seq->str (seq data))
+    )
+  )
+
 (defn wrap [object-type a-seq]
   (let [header (git-object-header object-type a-seq)]
     (concat header (to-seq a-seq))))
 
 (defn unwrap [a-seq]
+  (prn "a-seq=" a-seq)
   (let [space 32 ;;ASCII value of space
         s (.indexOf a-seq space) ;;first space
         null 0
@@ -69,13 +81,16 @@
                (Integer/parseInt size)))
     content))
 
-(defn write-blob [project-root content-as-seq-of-bytes]
-  (let [size (count content-as-seq-of-bytes)
-        sha1-hex-str (hash-object "blob" content-as-seq-of-bytes)
+(defn write-blob [project-root content]
+  (let [size (count content)
+        sha1-hex-str (hash-object "blob" content)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
-        file-path (util/format "%s/.git/objects/%s/%s" project-root two other)]
-    file-path))
+        file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
+        content-as-seq-of-bytes (if (string? content)
+                                  (vd/str->seq content)
+                                  content)]
+    (io/squirt file-path content-as-seq-of-bytes)))
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
@@ -240,6 +255,20 @@
   (def index (add project-root
                   "mul.clj"))
 
+  (let [f (io/suck "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7")
+        ins (-> f
+                (java.io.ByteArrayInputStream.)
+                (java.util.zip.InflaterInputStream.))
+        data (byte-array 10)]
+    (.. ins (read data))
+    (prn (vd/seq->str (seq data)))
+    )
+
+  (unzip "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7")
+  
   (write-blob project-root "test content\n")
+  (let [f (java.io.File. "/home/sto/tmp/test/.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4")]
+    (.. f getParentFile mkdirs)
+    )
 
   )
