@@ -234,42 +234,40 @@
                   "mul.clj"))
 
   (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
-      io/unzip-file
+      io/gunzip-file
       vd/seq->str)
 
-  (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
-      io/suck
-      io/unzip
-      vd/seq->str)
-
-  
-  (->> 
-   
-   
-   )
 
   (io/squirt "tmp/hello.zip"
-             (io/zip "hello.txt" (byte-array (vd/str->seq "hello world\n"))))
+             (io/zip "hello.txt" (vd/str->seq "hello world\n")))
 
-  
+  (-> "tmp/hello.zip"
+      io/suck
+      )
   
   (-> 
    ;;"/home/sto/tmp/test/.git/objects/10/8975088a1b6faee481d23d9ea2fae4ca0a2daf"
    ;;"/home/sto/tmp/test/.git/objects/2f/536a0ea9325587a00f2c195bb7e5e16c79f3da"
    "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
+   ;;"/home/sto/tmp/test/.git/objects/20/9f336b16a93240cc46c02f032093ac20d1e3b2"
+   ;;"/home/sto/tmp/test/.git/objects/33/00528fa9797aeb356baf4213459f8730ce8f01"
    io/suck
-   io/unzip
-   #_unwrap
-   vd/seq->str)
+   io/gunzip
+   ;;unwrap
+   ;;vd/seq->str
+   )
 
-  (io/squirt "tmp/foo2.zip" (io/zip "test2.txt" (vd/str->seq "foobar123")))
+  (io/squirt "tmp/foo.zip" (io/zip "test2.txt" "foobar123"))
+  (-> "tmp/foo.zip"
+      io/gunzip-file
+      )
   
   (write-blob project-root "add\n")
 
   (-> 
    "/home/sto/tmp/test/.git/objects/3b/18e512dba79e4c8300dd08aeb37f8e728b8dad"
    io/suck
-   io/unzip
+   io/gunzip
    )
 
   (def z (io/zip "foo.txt" (.getBytes "foobar 123")))
