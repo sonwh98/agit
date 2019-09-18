@@ -35,17 +35,12 @@
   (let [size (count a-seq)]
     (vd/str->seq (str obj-type " " size "\0"))))
 
-(defn to-seq [a-seq]
-  (if (string? a-seq)
-    (vd/str->seq a-seq)
-    a-seq))
-
 (defn hash-object
   "git hash-object does not hash the raw bytes but adds a header before sha1 hashing.
    https://stackoverflow.com/questions/552659/how-to-assign-a-git-sha1s-to-a-file-without-git/552725#552725"
   ([obj-type a-seq]
    (let [header (git-object-header obj-type a-seq)
-         seq-to-hash (concat header (to-seq a-seq))
+         seq-to-hash (concat header (io/to-seq a-seq))
          sha1-hex-str (-> seq-to-hash
                           vd/sha1
                           vd/seq->hex)]
@@ -55,7 +50,7 @@
 
 (defn wrap [object-type a-seq]
   (let [header (git-object-header object-type a-seq)]
-    (concat header (to-seq a-seq))))
+    (concat header (io/to-seq a-seq))))
 
 (defn unwrap [a-seq]
   (let [space 32 ;;ASCII value of space
@@ -75,7 +70,7 @@
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
-        zip-content (->> content to-seq (wrap "blob") (io/zip file-path))]
+        zip-content (->> content #_io/to-seq (wrap "blob") (io/zip file-path))]
     (io/squirt file-path zip-content)
     file-path))
 
@@ -247,17 +242,37 @@
       io/unzip
       vd/seq->str)
 
-  (-> 
-   "/home/sto/tmp/test/.git/objects/10/8975088a1b6faee481d23d9ea2fae4ca0a2daf"
-   io/suck
-   io/unzip
-   unwrap
-   vd/seq->str)
+  
+  (->> 
+   
+   
+   )
+
+  (io/squirt "tmp/hello.zip"
+             (io/zit "hello.txt" (byte-array (vd/str->seq "hello world\n"))))
 
   
-  (write-blob project-root (vd/str->seq "test content4\n"))
+  
+  (-> 
+   ;;"/home/sto/tmp/test/.git/objects/10/8975088a1b6faee481d23d9ea2fae4ca0a2daf"
+   ;;"/home/sto/tmp/test/.git/objects/2f/536a0ea9325587a00f2c195bb7e5e16c79f3da"
+   "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
+   io/suck
+   io/unzip
+   #_unwrap
+   vd/seq->str)
 
-  (-> "/home/sto/tmp/test/.git/objects/10/8975088a1b6faee481d23d9ea2fae4ca0a2daf"
-      io/unzip
-      )
+  (io/squirt "tmp/foo2.zip" (io/zip "test2.txt" (vd/str->seq "foobar123")))
+  
+  (write-blob project-root "add\n")
+
+  (-> 
+   "/home/sto/tmp/test/.git/objects/3b/18e512dba79e4c8300dd08aeb37f8e728b8dad"
+   io/suck
+   io/unzip
+   )
+
+  (def z (io/zip "foo.txt" (.getBytes "foobar 123")))
+  (io/squirt "tmp/foo.zip" z)
+
   )

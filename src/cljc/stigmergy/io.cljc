@@ -102,20 +102,12 @@
 
 (defn zit [file-path a-seq]
   (let [entry (java.util.zip.ZipEntry. file-path)]
-    (with-open [fout (java.io.FileOutputStream. "tmp/test.zip")
-                baos (java.io.ByteArrayOutputStream.)
-                zos (java.util.zip.ZipOutputStream. baos)
-                ]
+    (with-open [baos (java.io.ByteArrayOutputStream.)
+                zos (java.util.zip.ZipOutputStream. baos)]
       (.. entry (setSize (count a-seq)))
       (.. zos (putNextEntry entry))
       (.. zos closeEntry)
       (.. zos close)
-
-      (.write fout (.. baos toByteArray))
-      (.. fout close)
-      )
-
-    )
-  )
+      (.. baos toByteArray))))
 
 
