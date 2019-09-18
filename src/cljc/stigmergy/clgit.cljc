@@ -270,7 +270,10 @@
    io/gunzip
    )
 
-  (def z (io/zip "foo.txt" (.getBytes "foobar 123")))
+  (def z (io/gzip (.getBytes "foobar 123")))
   (io/squirt "tmp/foo.zip" z)
-
+  (-> "tmp/foo.zip"
+      io/suck
+      io/gunzip)
+  
   )

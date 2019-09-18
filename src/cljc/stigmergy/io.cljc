@@ -69,6 +69,11 @@
         path (java.nio.file.Paths/get root (into-array more-paths))]
     (into {} (Files/readAttributes path "unix:*" (into-array [LinkOption/NOFOLLOW_LINKS])))))
 
+(defn to-seq [a-seq]
+  (if (string? a-seq)
+    (vd/str->seq a-seq)
+    a-seq))
+
 (defn gunzip [zipped-bytes]
   (with-open [zip-ins (-> zipped-bytes
                           byte-array
@@ -81,6 +86,14 @@
 (defn gunzip-file [file-path]
   (-> file-path suck gunzip))
 
+(defn gzip [a-seq]
+  (with-open [baos (java.io.ByteArrayOutputStream.)
+              gzos (java.util.zip.GZIPOutputStream. baos)
+              ]
+    (.. gzos (write (byte-array (to-seq a-seq))))
+    (.. gzos close)
+    (.. baos toByteArray)))
+
 (defn zip [file-path a-seq]
   (let [entry (java.util.zip.ZipEntry. file-path)]
     (.. entry (setSize (count a-seq)))
@@ -92,10 +105,7 @@
       (.. zos close) ;;need to close zos before can call toByteArray. without this zip is corrupted
       (.. baos toByteArray))))
 
-(defn to-seq [a-seq]
-  (if (string? a-seq)
-    (vd/str->seq a-seq)
-    a-seq))
+
 
 
 
