@@ -1,7 +1,8 @@
 (ns stigmergy.io
   (:require [taoensso.timbre :as log :include-macros true]
             [clojure.core.async :as a :include-macros true]
-            [clojure.java.io :as jio])
+            [clojure.java.io :as jio]
+            [stigmergy.voodoo :as vd])
   (:import [java.nio.file Files LinkOption]
            [java.nio.file.attribute PosixFilePermissions]))
 
@@ -81,11 +82,40 @@
   (-> file-path suck unzip))
 
 (defn zip [file-path a-seq]
-  (let [zip-entry (java.util.zip.ZipEntry. file-path)]
-    (.. zip-entry (setSize (count a-seq)))
+  (let [zip-entry (java.util.zip.ZipEntry. file-path)
+        b-os (java.io.ByteArrayOutputStream.)
+        zip-os (java.util.zip.ZipOutputStream. b-os)]
     
-    (with-open [b-os (java.io.ByteArrayOutputStream.)
-                zip-os (java.util.zip.ZipOutputStream. b-os)]
-      (.. zip-os (putNextEntry zip-entry))
-      (.. zip-os (write (byte-array a-seq)))
-      (.. b-os toByteArray))))
+    (.. zip-entry (setSize (count a-seq)))
+    (.. zip-os (putNextEntry zip-entry))
+    (.. zip-os (write (byte-array a-seq)))
+    (.. zip-os closeEntry)
+    (let [ba (.. b-os toByteArray)]
+      (.. zip-os close)
+      ba)
+    ))
+
+(defn to-seq [a-seq]
+  (if (string? a-seq)
+    (vd/str->seq a-seq)
+    a-seq))
+
+(defn zit [file-path a-seq]
+  (let [entry (java.util.zip.ZipEntry. file-path)]
+    (with-open [fout (java.io.FileOutputStream. "tmp/test.zip")
+                baos (java.io.ByteArrayOutputStream.)
+                zos (java.util.zip.ZipOutputStream. baos)
+                ]
+      (.. entry (setSize (count a-seq)))
+      (.. zos (putNextEntry entry))
+      (.. zos closeEntry)
+      (.. zos close)
+
+      (.write fout (.. baos toByteArray))
+      (.. fout close)
+      )
+
+    )
+  )
+
+
