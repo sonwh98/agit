@@ -82,32 +82,21 @@
   (-> file-path suck unzip))
 
 (defn zip [file-path a-seq]
-  (let [zip-entry (java.util.zip.ZipEntry. file-path)
-        b-os (java.io.ByteArrayOutputStream.)
-        zip-os (java.util.zip.ZipOutputStream. b-os)]
+  (let [entry (java.util.zip.ZipEntry. file-path)]
+    (.. entry (setSize (count a-seq)))
     
-    (.. zip-entry (setSize (count a-seq)))
-    (.. zip-os (putNextEntry zip-entry))
-    (.. zip-os (write (byte-array a-seq)))
-    (.. zip-os closeEntry)
-    (let [ba (.. b-os toByteArray)]
-      (.. zip-os close)
-      ba)
-    ))
+    (with-open [baos (java.io.ByteArrayOutputStream.)
+                zos (java.util.zip.ZipOutputStream. baos)]
+      (.. zos (putNextEntry entry))
+      (.. zos closeEntry)
+      (.. zos close) ;;need to close zos before can call toByteArray
+      (.. baos toByteArray))))
 
 (defn to-seq [a-seq]
   (if (string? a-seq)
     (vd/str->seq a-seq)
     a-seq))
 
-(defn zit [file-path a-seq]
-  (let [entry (java.util.zip.ZipEntry. file-path)]
-    (with-open [baos (java.io.ByteArrayOutputStream.)
-                zos (java.util.zip.ZipOutputStream. baos)]
-      (.. entry (setSize (count a-seq)))
-      (.. zos (putNextEntry entry))
-      (.. zos closeEntry)
-      (.. zos close)
-      (.. baos toByteArray))))
+
 
 

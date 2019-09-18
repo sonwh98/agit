@@ -249,7 +249,7 @@
    )
 
   (io/squirt "tmp/hello.zip"
-             (io/zit "hello.txt" (byte-array (vd/str->seq "hello world\n"))))
+             (io/zip "hello.txt" (byte-array (vd/str->seq "hello world\n"))))
 
   
   
