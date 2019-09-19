@@ -275,5 +275,9 @@
   (-> "tmp/foo.zip"
       io/suck
       io/gunzip)
+
+  (->  "hello" io/compress io/decompress vd/seq->str)
+
+
   
   )

@@ -74,6 +74,13 @@
     (vd/str->seq a-seq)
     a-seq))
 
+(defn seq->byte-array [a-seq]
+  (cond
+    (bytes? a-seq) a-seq
+    (string? a-seq) (-> a-seq vd/str->seq byte-array)
+    (sequential? a-seq) (byte-array a-seq)
+    :else (byte-array [a-seq])))
+
 (defn gunzip [zipped-bytes]
   (with-open [zip-ins (-> zipped-bytes
                           byte-array
@@ -81,7 +88,7 @@
                           (java.util.zip.InflaterInputStream.))
               b-out (java.io.ByteArrayOutputStream.)]
     (jio/copy zip-ins b-out)
-    (vec (.. b-out toByteArray))))
+    (vec (.. b-out toByteAray))))
 
 (defn gunzip-file [file-path]
   (-> file-path suck gunzip))
@@ -105,8 +112,36 @@
       (.. zos close) ;;need to close zos before can call toByteArray. without this zip is corrupted
       (.. baos toByteArray))))
 
+(defn compress [a-seq]
+  (let [compressor (java.util.zip.Deflater.)
+        a-bytes (seq->byte-array a-seq)
+        buffer (byte-array 1024)
+        baos (java.io.ByteArrayOutputStream.)
+        _ (.. compressor (setInput a-bytes))
+        _ (.. compressor finish)
+        compressed-bytes (loop [finished? false]
+                           (if finished?
+                             (do
+                               (.. baos close)
+                               (.. baos toByteArray))
+                             (let [byte-count (.. compressor (deflate buffer))]
+                               (..  baos (write buffer 0 byte-count))
+                               (recur [finished? (.. compressor finished)]))))]
 
+    
+    compressed-bytes))
 
-
-
-
+(defn decompress [compressed-data]
+  (let [decompressor (java.util.zip.Inflater.)
+        _ (.. decompressor (setInput compressed-data))
+        buffer (byte-array 1024)
+        baos (java.io.ByteArrayOutputStream.)
+        decompressed-bytes (loop [finished? false]
+                             (if finished?
+                               (do
+                                 (.. baos close)
+                                 (.. baos toByteArray))
+                               (let [byte-count (.. decompressor (inflate buffer))]
+                                 (..  baos (write buffer 0 byte-count))
+                                 (recur [finished? (.. decompressor finished)]))))]
+    decompressed-bytes))
