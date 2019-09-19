@@ -50,10 +50,12 @@
 (defn suck
   "like slurp but returns vector of bytes"
   [file-path]
-  (with-open [f-in (jio/input-stream file-path)
-              b-out (java.io.ByteArrayOutputStream.)]
-    (jio/copy f-in b-out)
-    (vec (.. b-out toByteArray))))
+  (try
+    (with-open [f-in (jio/input-stream file-path)
+                b-out (java.io.ByteArrayOutputStream.)]
+      (jio/copy f-in b-out)
+      (vec (.. b-out toByteArray)))
+    (catch Exception ex nil)))
 
 (defn lstat [file]
   (let [paths (clojure.string/split file #"/")
