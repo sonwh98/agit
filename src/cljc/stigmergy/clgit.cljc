@@ -70,8 +70,8 @@
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
-        zip-content (->> content #_io/to-seq (wrap "blob") (io/zip file-path))]
-    (io/squirt file-path zip-content)
+        compressed-content (->> content io/to-seq (wrap "blob") io/compress)]
+    (io/squirt file-path compressed-content)
     file-path))
 
 (defn padding [n]
@@ -233,33 +233,17 @@
   (def index (add project-root
                   "mul.clj"))
 
-  (-> "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
-      io/gunzip-file
-      vd/seq->str)
-
-
-  (io/squirt "tmp/hello.zip"
-             (io/zip "hello.txt" (vd/str->seq "hello world\n")))
+  (->
+   ;;"/home/sto/tmp/test/.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4"
+   ;;"/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
+   "/home/sto/tmp/test/.git/objects/f3/05bb420380079d7ade1201f4dc2fa906bbd2ea"
+   io/suck
+   io/decompress
+   vd/seq->str
+   )
 
   (-> "tmp/hello.zip"
       io/suck
-      )
-  
-  (-> 
-   ;;"/home/sto/tmp/test/.git/objects/10/8975088a1b6faee481d23d9ea2fae4ca0a2daf"
-   ;;"/home/sto/tmp/test/.git/objects/2f/536a0ea9325587a00f2c195bb7e5e16c79f3da"
-   "/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
-   ;;"/home/sto/tmp/test/.git/objects/20/9f336b16a93240cc46c02f032093ac20d1e3b2"
-   ;;"/home/sto/tmp/test/.git/objects/33/00528fa9797aeb356baf4213459f8730ce8f01"
-   io/suck
-   io/gunzip
-   ;;unwrap
-   ;;vd/seq->str
-   )
-
-  (io/squirt "tmp/foo.zip" (io/zip "test2.txt" "foobar123"))
-  (-> "tmp/foo.zip"
-      io/gunzip-file
       )
   
   (write-blob project-root "add\n")

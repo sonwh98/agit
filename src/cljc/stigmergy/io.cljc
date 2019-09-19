@@ -88,7 +88,7 @@
                           (java.util.zip.InflaterInputStream.))
               b-out (java.io.ByteArrayOutputStream.)]
     (jio/copy zip-ins b-out)
-    (vec (.. b-out toByteAray))))
+    (vec (.. b-out toByteArray))))
 
 (defn gunzip-file [file-path]
   (-> file-path suck gunzip))
@@ -133,6 +133,7 @@
 
 (defn decompress [compressed-data]
   (let [decompressor (java.util.zip.Inflater.)
+        compressed-data (seq->byte-array compressed-data)
         _ (.. decompressor (setInput compressed-data))
         buffer (byte-array 1024)
         baos (java.io.ByteArrayOutputStream.)
