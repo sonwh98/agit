@@ -41,6 +41,12 @@
     (a/go
       (prn "foobar=" (a/<! (io/mkdir "/tmp/foobar"))))
     )
+
+  (testing "compress/decompress"
+    (let [txt  "hello 12345"]
+      (is (= txt
+             (-> txt io/compress io/decompress vd/seq->str))))
+    )
   )
 
 (comment
