@@ -76,13 +76,6 @@
     (vd/str->seq a-seq)
     a-seq))
 
-#_(defn seq->byte-array [a-seq]
-    (cond
-      (bytes? a-seq) a-seq
-      (string? a-seq) (-> a-seq vd/str->seq byte-array)
-      (sequential? a-seq) (byte-array a-seq)
-      :else (byte-array [a-seq])))
-
 (defn gunzip [zipped-bytes]
   (with-open [zip-ins (-> zipped-bytes
                           byte-array
