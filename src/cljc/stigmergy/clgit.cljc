@@ -234,34 +234,15 @@
                   "mul.clj"))
 
   (->
-   ;;"/home/sto/tmp/test/.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4"
-   ;;"/home/sto/tmp/test/.git/objects/76/d4bb83f8dab3933a481bd2d65fbcc1283ef9b7"
-   "/home/sto/tmp/test/.git/objects/f3/05bb420380079d7ade1201f4dc2fa906bbd2ea"
+   ;;(str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4") ;;mul.clj
+   ;;(str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc")
+   (str project-root "/.git/objects/ac/e1184aaa4831125dd8ac321ff58356345b5270");; commit object
    io/suck
    io/decompress
    vd/seq->str
+
    )
 
-  (-> "tmp/hello.zip"
-      io/suck
-      )
-  
   (write-blob project-root "add\n")
-
-  (-> 
-   "/home/sto/tmp/test/.git/objects/3b/18e512dba79e4c8300dd08aeb37f8e728b8dad"
-   io/suck
-   io/gunzip
-   )
-
-  (def z (io/gzip (.getBytes "foobar 123")))
-  (io/squirt "tmp/foo.zip" z)
-  (-> "tmp/foo.zip"
-      io/suck
-      io/gunzip)
-
-  (->  "hello" io/compress io/decompress vd/seq->str)
-
-
   
   )
