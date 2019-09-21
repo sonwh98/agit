@@ -60,6 +60,7 @@
         obj-type (vd/seq->str (take s a-seq))
         size (vd/seq->str (util/take-between (inc s) n a-seq))
         content (drop (inc n) a-seq)]
+    (prn "s=" s " n=" n)
     (assert (= (count content)
                (Integer/parseInt size)))
     content))
@@ -233,16 +234,36 @@
   (def index (add project-root
                   "mul.clj"))
 
-  (->
+  (->>
    ;;(str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4") ;;mul.clj
-   ;;(str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc")
-   (str project-root "/.git/objects/ac/e1184aaa4831125dd8ac321ff58356345b5270");; commit object
+   (str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc") ;; tree object
+   ;;(str project-root "/.git/objects/ac/e1184aaa4831125dd8ac321ff58356345b5270");; commit object
    io/suck
+
    io/decompress
-   vd/seq->str
+   ;;vec
+   count
+   ;;(util/take-between 24 44)
+   ;;(take-last 20)
+   ;;(vd/seq->hex)
 
    )
 
+  (- 43 8 14)
+  (- 35 20)
+  
+  (let [tree-seq (->> (str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc")
+                      io/suck
+                      io/decompress
+                      seq)
+        ;;content (vd/seq->str (take 22 tree-seq))
+        content (take-last 35 tree-seq)
+        file-meta (util/take-between 0 (- 35 20) content)
+        sha1 (vd/seq->hex (take-last 20 content))
+        ]
+    (vd/seq->str file-meta)
+    )
+  
   (write-blob project-root "add\n")
   
   )
