@@ -52,17 +52,23 @@
   (let [header (git-object-header object-type a-seq)]
     (concat header (io/to-seq a-seq))))
 
-(defn unwrap [a-seq]
-  (let [space 32 ;;ASCII value of space
-        s (.indexOf a-seq space) ;;first space
+(defn get-object-type-and-size [a-seq]
+  (let [space 32
         null 0
+        s (.indexOf a-seq space)
         n (.indexOf a-seq null)
         obj-type (vd/seq->str (take s a-seq))
-        size (vd/seq->str (util/take-between (inc s) n a-seq))
-        content (drop (inc n) a-seq)]
-    (prn "s=" s " n=" n)
+        size (->> a-seq
+                  (util/take-between (inc s) n )
+                  vd/seq->str
+                  Integer/parseInt)]
+    [obj-type size]))
+
+(defn unwrap [a-seq]
+  (let [[obj-type size] (get-object-type-and-size a-seq)
+        content (take-last size a-seq)]
     (assert (= (count content)
-               (Integer/parseInt size)))
+               size))
     content))
 
 (defn write-blob [project-root content]
@@ -241,27 +247,29 @@
    io/suck
 
    io/decompress
-   ;;vec
-   count
-   ;;(util/take-between 24 44)
-   ;;(take-last 20)
-   ;;(vd/seq->hex)
 
+
+   unwrap
+   vd/seq->str
    )
 
-  (- 43 8 14)
-  (- 35 20)
+
+  
   
   (let [tree-seq (->> (str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc")
                       io/suck
                       io/decompress
-                      seq)
+                      vec)
+        [obj-type size] (get-object-type-and-size tree-seq)
         ;;content (vd/seq->str (take 22 tree-seq))
         content (take-last 35 tree-seq)
         file-meta (util/take-between 0 (- 35 20) content)
         sha1 (vd/seq->hex (take-last 20 content))
         ]
-    (vd/seq->str file-meta)
+
+    [obj-type size]
+    ;;(->> tree-seq (take 20) vd/seq->str)
+    ;;(vd/seq->str file-meta)
     )
   
   (write-blob project-root "add\n")
