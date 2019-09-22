@@ -140,4 +140,4 @@
                                (let [byte-count (.. decompressor (inflate buffer))]
                                  (..  baos (write buffer 0 byte-count))
                                  (recur [finished? (.. decompressor finished)]))))]
-    decompressed-bytes))
+    (vec decompressed-bytes)))
