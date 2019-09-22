@@ -233,6 +233,19 @@
          (io/squirt (str project-root "/.git/index")))
     index))
 
+(defn index-of
+  "find index of a value v in a-seq starting from s"
+  ([a-seq v s]
+   (let [found (filter (fn [[index value]]
+                         (and (>= index s)
+                              (= value v)))
+                       (util/with-index a-seq))
+         found-index (ffirst found)]
+     found-index))
+  ([a-seq v]
+   "find index of a value v in a-seq starting from 0"
+   (index-of a-seq v 0)))
+
 (comment
   (def project-root "/home/sto/tmp/test")
   (def index (parse-git-index (str project-root "/.git/index")))
@@ -242,36 +255,64 @@
 
   (->>
    ;;(str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4") ;;mul.clj
-   (str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc") ;; tree object
+   ;;(str project-root "/.git/objects/3e/d6dc80c6424e488326c987d1d648dae033b1a5") ;;add.clj
+   ;;(str project-root "/.git/objects/5f/1f8c3b0602b9d6b24d0aa2de483ca3ec04293a") ;;commit
+   ;;(str project-root "/.git/objects/e4/bacba3da20fe448dccfa5c8a92fcb9c3a05e89") ;;tree
+   (str project-root "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62")
+   ;;(str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc") ;; tree object
    ;;(str project-root "/.git/objects/ac/e1184aaa4831125dd8ac321ff58356345b5270");; commit object
    io/suck
 
    io/decompress
 
 
-   unwrap
-   vd/seq->str
+   ;;unwrap
+   ;;vd/seq->str
    )
 
-
-  
-  
-  (let [tree-seq (->> (str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc")
+  (let [tree-seq (->> (str project-root "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62"
+                           ;;"/.git/objects/e4/bacba3da20fe448dccfa5c8a92fcb9c3a05e89"
+                           )
                       io/suck
                       io/decompress
                       vec)
         [obj-type size] (get-object-type-and-size tree-seq)
         ;;content (vd/seq->str (take 22 tree-seq))
-        content (take-last 35 tree-seq)
-        file-meta (util/take-between 0 (- 35 20) content)
-        sha1 (vd/seq->hex (take-last 20 content))
-        ]
+        entries (take-last size tree-seq)]
+    (prn "size=" size)
+    (vd/seq->str entries)
+    (loop [i 0
+           entries entries
+           results []]
+      (if (< i size)
+        (let [space 32
+              j (.indexOf entries space)
+              e {:mode (util/take-between i j entries)
+                 :file }]
+          
 
-    [obj-type size]
+          ))
+      
+      )
+    ;;(vd/seq->str (util/take-between 0 24 tree-seq))
+    ;;(vd/seq->str (util/take-between 0 size tree-seq))
+    ;;[obj-type size]
     ;;(->> tree-seq (take 20) vd/seq->str)
     ;;(vd/seq->str file-meta)
+
+    )
+
+  
+  
+  (let [space 32
+        null 0
+        entry [1 "i" 2 3 "i" space  "f" "i" "l" "e" 0 "hex"]]
+    (index-of entry "i" 5)
     )
   
   (write-blob project-root "add\n")
-  
+
+
+
+
   )
