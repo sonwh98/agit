@@ -246,6 +246,23 @@
    "find index of a value v in a-seq starting from 0"
    (index-of a-seq v 0)))
 
+(defn parse-tree-object
+  "takes tree-seq raw bytes of tree object and returns a vector of maps containing entries with keys :mode :file :sha1"
+  [tree-seq]
+  (loop [entries (unwrap tree-seq)
+         results []]
+    (if (pos? (count entries))
+      (let [space 32
+            null 0
+            mode-end (index-of entries space)
+            file-end (index-of entries null mode-end)
+            sha1-end (+ (inc file-end) 20)
+            tree-entry {:mode (vd/seq->str (take mode-end entries))
+                        :file (vd/seq->str (util/take-between (inc mode-end) file-end entries))
+                        :sha1 (vd/seq->hex (util/take-between (inc file-end) sha1-end entries))}]
+        (recur (drop sha1-end entries) (conj results tree-entry)))
+      results)))
+
 (comment
   (def project-root "/home/sto/tmp/test")
   (def index (parse-git-index (str project-root "/.git/index")))
@@ -266,8 +283,6 @@
    io/suck
 
    io/decompress
-
-
    ;;unwrap
    vd/seq->str
    )
@@ -319,4 +334,8 @@
     :file (32 115 117 98 46 99 108 106),
     :sha1 (0 120 92 94 16 42 -100 -74 13 102 -80 75 36 -82 112 -74 -16 -55 55 118)}]
 
+  (parse-tree-object (->> (str project-root "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62")
+                          io/suck
+                          io/decompress
+                          ))
   )
