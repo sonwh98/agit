@@ -262,16 +262,17 @@
    
    ;;(str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc") ;; tree object
    ;;(str project-root "/.git/objects/ac/e1184aaa4831125dd8ac321ff58356345b5270");; commit object
+   (str project-root "/.git/objects/a9/8fd2c2855c3d2b12876854a773d30f2c39199b")
    io/suck
 
    io/decompress
 
 
    ;;unwrap
-   ;;vd/seq->str
+   vd/seq->str
    )
 
-  (let [tree-seq (->> (str project-root "/.git/objects/4b/f3de4f6cee771dd26e4fc2f622d81acaec30fe")
+  (let [tree-seq (->> (str project-root "/.git/objects/a9/8fd2c2855c3d2b12876854a773d30f2c39199b")
                       io/suck
                       io/decompress
                       vec)
@@ -281,25 +282,23 @@
     (prn "size=" size)
     (prn "tree-seq=" (vd/seq->str tree-seq))
     (prn "entries2=" entries2)
-    (loop [i 0
-           entries entries2
+    (loop [entries entries2
            results []]
-      (prn "i=" i)
-      (if (< i size)
+      (prn "entries=" entries)
+      (prn "results= " results)
+      (if (pos? (count entries))
         (let [space 32
               null 0
-              
-              _ (prn "results= " results)
-              mode-end (index-of entries space i)
+              mode-end (index-of entries space)
               _ (prn "mode-end" mode-end)
               file-end (index-of entries null mode-end)
               _ (prn "file-end="file-end)
               sha1-end (+ (inc file-end) 20)
               _ (prn "sha1-end=" sha1-end)
-              tree-entry {:mode (vd/seq->str (util/take-between i mode-end entries))
+              tree-entry {:mode (vd/seq->str (take mode-end entries))
                           :file (vd/seq->str (util/take-between (inc mode-end) file-end entries))
-                          :sha1 (vd/seq->hex (util/take-between file-end sha1-end entries))}]
-          (recur sha1-end (drop sha1-end entries) (conj results tree-entry)))
+                          :sha1 (vd/seq->hex (util/take-between (inc file-end) sha1-end entries))}]
+          (recur (drop sha1-end entries) (conj results tree-entry)))
         results)
       )
     
