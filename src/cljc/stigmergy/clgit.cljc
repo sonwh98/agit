@@ -217,8 +217,9 @@
 
                                        :dev (get file-attributes "dev")
                                        :ino (get file-attributes "ino")
-                                       :mode (vd/seq->oct (vd/int->seq (get file-attributes "mode")))
-                                       
+                                       :mode (-> (file-attributes "mode")
+                                                 vd/int->seq
+                                                 vd/seq->oct)
                                        :uid (get file-attributes "uid")
                                        :gid (get file-attributes "gid")
                                        :size (get file-attributes "size")
