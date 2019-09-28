@@ -71,7 +71,9 @@
                size))
     content))
 
-(defn write-blob [project-root content]
+(defn write-blob
+  "write blob to .git/objects return the sha1 hash of blob"
+  [project-root content]
   (let [size (count content)
         sha1-hex-str (hash-object "blob" content)
         two (vd/seq->str (take 2 sha1-hex-str))
@@ -79,7 +81,7 @@
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
         compressed-content (->> content io/to-seq (wrap "blob") io/compress)]
     (io/squirt file-path compressed-content)
-    file-path))
+    sha1-hex-str))
 
 (defn padding [n]
   (let [floor (quot (- n 2) 8)
@@ -208,7 +210,6 @@
                             [mtime-sec mtime-nsec] (ms->sec-nanosec mtime-ms)
                             file-path (str project-root "/" file)
                             file-content (io/suck file-path)
-                            sha1-as-bytes (-> file-content vd/sha1 )
                             new-entry {:ctime-sec ctime-sec 
                                        :ctime-nsec ctime-nsec
                                        :mtime-sec mtime-sec 
@@ -221,11 +222,10 @@
                                        :uid (get file-attributes "uid")
                                        :gid (get file-attributes "gid")
                                        :size (get file-attributes "size")
-                                       :sha1 (vd/seq->hex sha1-as-bytes)
+                                       :sha1 (write-blob project-root file-content)
                                        :flags 0
                                        :name-len (count file)
                                        :name file}]
-                        (write-blob project-root file-content)
                         new-entry))
         entries (sort-by :name (concat entries new-entries))
         index (assoc index :entries entries :entry-count (count entries))]
@@ -268,22 +268,33 @@
   (def index (parse-git-index (str project-root "/.git/index")))
 
   (def index (add project-root
-                  "mul.clj"))
+                  "src/mul.clj"))
 
   (->>
-   (str project-root "/.git/objects/a9/8fd2c2855c3d2b12876854a773d30f2c39199b")
+   (str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4")
    io/suck
    io/decompress
    ;;unwrap
-   vd/seq->str)
+   ;;vd/seq->str
+   )
 
+  (init {:dir project-root}) 
+  (write-blob project-root "test content\n")
+  ;;.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
+
+  ;;good
+  ;;86f876800853c4cb1de6f829cb1af9faca449d1a  .git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
+
+  ;;bad
+  ;;b058604f025b0162f1f8df32838232918bffd0aa  .git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
   
-  (write-blob project-root "add\n")
-
   (parse-tree-object (->> (str project-root
                                "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62"
                                )
                           io/suck
                           io/decompress
                           ))
+
+
+  
   )
