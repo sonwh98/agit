@@ -271,68 +271,14 @@
                   "mul.clj"))
 
   (->>
-   ;;(str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4") ;;mul.clj
-   ;;(str project-root "/.git/objects/3e/d6dc80c6424e488326c987d1d648dae033b1a5") ;;add.clj
-   ;;(str project-root "/.git/objects/5f/1f8c3b0602b9d6b24d0aa2de483ca3ec04293a") ;;commit
-   ;;(str project-root "/.git/objects/e4/bacba3da20fe448dccfa5c8a92fcb9c3a05e89") ;;tree
-   ;;(str project-root "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62")
-   
-   ;;(str project-root "/.git/objects/1c/ea9c4904eac4b98ceed306528d4affc88e0fcc") ;; tree object
-   ;;(str project-root "/.git/objects/ac/e1184aaa4831125dd8ac321ff58356345b5270");; commit object
    (str project-root "/.git/objects/a9/8fd2c2855c3d2b12876854a773d30f2c39199b")
    io/suck
-
    io/decompress
    ;;unwrap
-   vd/seq->str
-   )
+   vd/seq->str)
 
-  (let [tree-seq (->> (str project-root "/.git/objects/a9/8fd2c2855c3d2b12876854a773d30f2c39199b")
-                      io/suck
-                      io/decompress
-                      vec)
-        [obj-type size] (get-object-type-and-size tree-seq)
-        ;;content (vd/seq->str (take 22 tree-seq))
-        entries2 (take-last size tree-seq)]
-    (prn "size=" size)
-    (prn "tree-seq=" (vd/seq->str tree-seq))
-    (prn "entries2=" entries2)
-    (loop [entries entries2
-           results []]
-      (prn "entries=" entries)
-      (prn "results= " results)
-      (if (pos? (count entries))
-        (let [space 32
-              null 0
-              mode-end (index-of entries space)
-              _ (prn "mode-end" mode-end)
-              file-end (index-of entries null mode-end)
-              _ (prn "file-end="file-end)
-              sha1-end (+ (inc file-end) 20)
-              _ (prn "sha1-end=" sha1-end)
-              tree-entry {:mode (vd/seq->str (take mode-end entries))
-                          :file (vd/seq->str (util/take-between (inc mode-end) file-end entries))
-                          :sha1 (vd/seq->hex (util/take-between (inc file-end) sha1-end entries))}]
-          (recur (drop sha1-end entries) (conj results tree-entry)))
-        results)
-      )
-    
-    ;;(vd/seq->str (util/take-between 0 24 tree-seq))
-    ;;(vd/seq->str (util/take-between 0 size tree-seq))
-    ;;[obj-type size]
-    ;;(->> tree-seq (take 20) vd/seq->str)
-    ;;(vd/seq->str file-meta)
-
-    )
-  
   
   (write-blob project-root "add\n")
-  [{:mode (vd/seq->oct (49 48 48 54 52 52)),
-    :file (32 97 100 100 46 99 108 106),
-    :sha1 (0 62 -42 -36 -128 -58 66 78 72 -125 38 -55 -121 -47 -42 72 -38 -32 51 -79)}
-   {:mode (56 -60 49 48 48 54 52 52),
-    :file (32 115 117 98 46 99 108 106),
-    :sha1 (0 120 92 94 16 42 -100 -74 13 102 -80 75 36 -82 112 -74 -16 -55 55 118)}]
 
   (parse-tree-object (->> (str project-root "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62")
                           io/suck
