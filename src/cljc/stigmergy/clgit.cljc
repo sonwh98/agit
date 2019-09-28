@@ -48,7 +48,9 @@
   ([a-seq]
    (hash-object "blob" a-seq)))
 
-(defn wrap [object-type a-seq]
+(defn wrap
+  "git objects are wrapped in a header"
+  [object-type a-seq]
   (let [header (git-object-header object-type a-seq)]
     (concat header (io/to-seq a-seq))))
 
@@ -64,7 +66,9 @@
                   Integer/parseInt)]
     [obj-type size]))
 
-(defn unwrap [a-seq]
+(defn unwrap
+  "unwrap git object returning the raw content as seq of bytes"
+  [a-seq]
   (let [[obj-type size] (get-object-type-and-size a-seq)
         content (take-last size a-seq)]
     (assert (= (count content)
