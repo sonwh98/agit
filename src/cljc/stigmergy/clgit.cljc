@@ -280,7 +280,9 @@
   
   (write-blob project-root "add\n")
 
-  (parse-tree-object (->> (str project-root "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62")
+  (parse-tree-object (->> (str project-root
+                               "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62"
+                               )
                           io/suck
                           io/decompress
                           ))
