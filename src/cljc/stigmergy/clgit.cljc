@@ -251,23 +251,6 @@
          (io/squirt (str project-root "/.git/index")))
     index))
 
-(defn parse-tree-object
-  "takes tree-seq raw bytes of tree object and returns a vector of maps containing entries with keys :mode :file :sha1"
-  [tree-seq]
-  (loop [entries (unwrap tree-seq)
-         results []]
-    (if (pos? (count entries))
-      (let [space 32
-            null 0
-            mode-end (util/index-of entries space)
-            file-end (util/index-of entries null mode-end)
-            sha1-end (+ (inc file-end) 20)
-            tree-entry {:mode (vd/seq->str (take mode-end entries))
-                        :file (vd/seq->str (util/take-between (inc mode-end) file-end entries))
-                        :sha1 (vd/seq->hex (util/take-between (inc file-end) sha1-end entries))}]
-        (recur (drop sha1-end entries) (conj results tree-entry)))
-      results)))
-
 (defn cat-file [project-root sha1]
   (let [two (vd/seq->str (take 2 sha1))
         other (vd/seq->str (drop 2 sha1))
@@ -275,6 +258,22 @@
     (-> file-path
         io/suck
         io/decompress)))
+
+(defn parse-tree-object [project-root sha1]
+  (let [tree-seq (cat-file project-root sha1)]
+    (loop [entries (unwrap tree-seq)
+           results []]
+      (if (pos? (count entries))
+        (let [space 32
+              null 0
+              mode-end (util/index-of entries space)
+              file-end (util/index-of entries null mode-end)
+              sha1-end (+ (inc file-end) 20)
+              tree-entry {:mode (vd/seq->str (take mode-end entries))
+                          :file (vd/seq->str (util/take-between (inc mode-end) file-end entries))
+                          :sha1 (vd/seq->hex (util/take-between (inc file-end) sha1-end entries))}]
+          (recur (drop sha1-end entries) (conj results tree-entry)))
+        results))))
 
 (defn parse-commit-object [project-root sha1]
   (let [commit-content (unwrap (cat-file project-root sha1))
@@ -286,8 +285,6 @@
     (prn  tree-sha1)
     )
   )
-
-
 
 (comment
   (def project-root "/home/sto/tmp/test")
@@ -304,6 +301,10 @@
   
   (parse-commit-object project-root "6602853e69285bfbed6d80480289278600c02a92")
 
+  (parse-tree-object project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
+  (parse-tree-object project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62")
+
+  (vd/seq->char (cat-file project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62"))
 
   (let [tree-seq (->> (str project-root
                            "/.git/objects/55/e3e7f64afee31012c8c00c56cdd97d95b5e31c"
@@ -313,8 +314,8 @@
     (-> tree-seq vd/seq->char)
     (parse-tree-object tree-seq)
     )
-  
 
 
-  
+
+
   )
