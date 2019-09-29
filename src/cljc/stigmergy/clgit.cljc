@@ -54,24 +54,24 @@
   (let [header (git-object-header object-type a-seq)]
     (concat header (io/to-seq a-seq))))
 
-(defn index-of
-  "find index of a value v in a-seq starting from s"
-  ([a-seq v s]
-   (let [found (filter (fn [[index value]]
-                         (and (>= index s)
-                              (= value v)))
-                       (util/with-index a-seq))
-         found-index (ffirst found)]
-     found-index))
-  ([a-seq v]
-   "find index of a value v in a-seq starting from 0"
-   (index-of a-seq v 0)))
+#_(defn index-of
+    "find index of a value v in a-seq starting from s"
+    ([a-seq v s]
+     (let [found (filter (fn [[index value]]
+                           (and (>= index s)
+                                (= value v)))
+                         (util/with-index a-seq))
+           found-index (ffirst found)]
+       found-index))
+    ([a-seq v]
+     "find index of a value v in a-seq starting from 0"
+     (index-of a-seq v 0)))
 
 (defn get-object-type-and-size [a-seq]
   (let [space 32
         null 0
-        s (index-of a-seq space)
-        n (index-of a-seq null)
+        s (util/index-of a-seq space)
+        n (util/index-of a-seq null)
         obj-type (vd/seq->str (take s a-seq))
         size (->> a-seq
                   (util/take-between (inc s) n )
@@ -259,14 +259,18 @@
     (if (pos? (count entries))
       (let [space 32
             null 0
-            mode-end (index-of entries space)
-            file-end (index-of entries null mode-end)
+            mode-end (util/index-of entries space)
+            file-end (util/index-of entries null mode-end)
             sha1-end (+ (inc file-end) 20)
             tree-entry {:mode (vd/seq->str (take mode-end entries))
                         :file (vd/seq->str (util/take-between (inc mode-end) file-end entries))
                         :sha1 (vd/seq->hex (util/take-between (inc file-end) sha1-end entries))}]
         (recur (drop sha1-end entries) (conj results tree-entry)))
       results)))
+
+(defn parse-commit-object [commit-seq]
+
+  )
 
 (comment
   (def project-root "/home/sto/tmp/test")
@@ -276,11 +280,11 @@
                   "src/mul.clj"))
 
   (->>
-   (str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4")
+   (str project-root "/.git/objects/d3/8238abf9e9706d0b98b5f5c19028cb7c6e756f")
    io/suck
    io/decompress
    ;;unwrap
-   ;;vd/seq->str
+   vd/seq->str
    )
 
   (init {:dir project-root}) 
