@@ -282,6 +282,12 @@
         tree-sha1 (-> commit first (clojure.string/split #" ") second)]
     commit))
 
+(defn parse-blob-object [project-root sha1]
+  (let [blob-content (unwrap (cat-file project-root sha1))]
+    blob-content
+    )
+  )
+
 (comment
   (def project-root "/home/sto/tmp/test")
   (init {:dir project-root})
@@ -312,6 +318,8 @@
   (parse-commit-object project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
   (parse-tree-object project-root "d082d83094e4496c05344c3c4a3a259744df3ba4")
   (parse-tree-object project-root "c7b2b064d38d017406637ceb61cb1fbec0b81c92")
-
+  (-> (parse-blob-object project-root "1269488f7fb1f4b56a8c0e5eb48cecbfadfa9219")
+      vd/seq->str
+      )
   
   )
