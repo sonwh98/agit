@@ -280,7 +280,9 @@
                   "src/mul.clj"))
 
   (->>
-   (str project-root "/.git/objects/d3/8238abf9e9706d0b98b5f5c19028cb7c6e756f")
+   ;;(str project-root "/.git/objects/42/47910eee1f88e3d5d9ff3b5c6f0797d73294e6")
+   ;;(str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4")
+   (str project-root "/.git/objects/03/e9b87fb51cbdac96dfe46e251812ed9f5822ca")
    io/suck
    io/decompress
    ;;unwrap
