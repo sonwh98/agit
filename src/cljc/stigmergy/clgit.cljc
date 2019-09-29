@@ -54,11 +54,24 @@
   (let [header (git-object-header object-type a-seq)]
     (concat header (io/to-seq a-seq))))
 
+(defn index-of
+  "find index of a value v in a-seq starting from s"
+  ([a-seq v s]
+   (let [found (filter (fn [[index value]]
+                         (and (>= index s)
+                              (= value v)))
+                       (util/with-index a-seq))
+         found-index (ffirst found)]
+     found-index))
+  ([a-seq v]
+   "find index of a value v in a-seq starting from 0"
+   (index-of a-seq v 0)))
+
 (defn get-object-type-and-size [a-seq]
   (let [space 32
         null 0
-        s (.indexOf a-seq space)
-        n (.indexOf a-seq null)
+        s (index-of a-seq space)
+        n (index-of a-seq null)
         obj-type (vd/seq->str (take s a-seq))
         size (->> a-seq
                   (util/take-between (inc s) n )
@@ -237,19 +250,6 @@
     (->> index index-map->seq
          (io/squirt (str project-root "/.git/index")))
     index))
-
-(defn index-of
-  "find index of a value v in a-seq starting from s"
-  ([a-seq v s]
-   (let [found (filter (fn [[index value]]
-                         (and (>= index s)
-                              (= value v)))
-                       (util/with-index a-seq))
-         found-index (ffirst found)]
-     found-index))
-  ([a-seq v]
-   "find index of a value v in a-seq starting from 0"
-   (index-of a-seq v 0)))
 
 (defn parse-tree-object
   "takes tree-seq raw bytes of tree object and returns a vector of maps containing entries with keys :mode :file :sha1"
