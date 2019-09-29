@@ -279,15 +279,19 @@
   (def index (add project-root
                   "src/mul.clj"))
 
-  (->>
-   ;;(str project-root "/.git/objects/42/47910eee1f88e3d5d9ff3b5c6f0797d73294e6")
-   ;;(str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4")
-   (str project-root "/.git/objects/03/e9b87fb51cbdac96dfe46e251812ed9f5822ca")
-   io/suck
-   io/decompress
-   ;;unwrap
-   vd/seq->str
-   )
+  (let [commit-content (->
+                        (str project-root
+                             "/.git/objects/42/47910eee1f88e3d5d9ff3b5c6f0797d73294e6")
+                        ;;(str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4")
+                        ;;(str project-root "/.git/objects/03/e9b87fb51cbdac96dfe46e251812ed9f5822ca")
+                        io/suck
+                        io/decompress
+                        unwrap)]
+    (-> (clojure.string/join "" (map char commit-content))
+        
+        (clojure.string/split #"\n"))
+    ;;(clojure.string/split raw #"\n")
+    )
 
   (init {:dir project-root}) 
   (write-blob project-root "test content\n")
