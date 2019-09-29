@@ -270,7 +270,7 @@
               file-end (util/index-of entries null mode-end)
               sha1-end (+ (inc file-end) 20)
               tree-entry {:mode (vd/seq->str (take mode-end entries))
-                          :file (vd/seq->str (util/take-between (inc mode-end) file-end entries))
+                          :path (vd/seq->str (util/take-between (inc mode-end) file-end entries))
                           :sha1 (vd/seq->hex (util/take-between (inc file-end) sha1-end entries))}]
           (recur (drop sha1-end entries) (conj results tree-entry)))
         results))))
@@ -279,12 +279,8 @@
   (let [commit-content (unwrap (cat-file project-root sha1))
         commit (-> (clojure.string/join "" (map char commit-content))
                    (clojure.string/split #"\n"))
-        tree-sha1 (-> commit first (clojure.string/split #" ") second) 
-        ]
-    (prn commit)
-    (prn  tree-sha1)
-    )
-  )
+        tree-sha1 (-> commit first (clojure.string/split #" ") second)]
+    commit))
 
 (comment
   (def project-root "/home/sto/tmp/test")
@@ -307,4 +303,15 @@
   (vd/seq->char (cat-file project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62"))
 
 
+  (parse-commit-object project-root "51c728e8d4c98187f8dcce40803982d44378d838")
+  (parse-tree-object project-root "127ad2ef366f53e843334fb97cd4c29c6386d8f0")
+  (parse-tree-object project-root "4bf3de4f6cee771dd26e4fc2f622d81acaec30fe")
+  (parse-commit-object project-root "75ea033015e19b68f449fad44d52384f7b582b09")
+  (parse-tree-object project-root "d3595c5162b9f12b3acfd103ec2c35ddd9e2172a")
+
+  (parse-commit-object project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
+  (parse-tree-object project-root "d082d83094e4496c05344c3c4a3a259744df3ba4")
+  (parse-tree-object project-root "c7b2b064d38d017406637ceb61cb1fbec0b81c92")
+
+  
   )
