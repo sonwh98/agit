@@ -268,49 +268,49 @@
         (recur (drop sha1-end entries) (conj results tree-entry)))
       results)))
 
-(defn parse-commit-object [commit-seq]
+(defn cat-file [project-root sha1]
+  (let [two (vd/seq->str (take 2 sha1))
+        other (vd/seq->str (drop 2 sha1))
+        file-path (util/format "%s/.git/objects/%s/%s" project-root two other)]
+    (-> file-path
+        io/suck
+        io/decompress)))
 
+(defn parse-commit-object [project-root sha1]
+  (let [commit-content (unwrap (cat-file project-root sha1))
+        commit (-> (clojure.string/join "" (map char commit-content))
+                   (clojure.string/split #"\n"))
+        tree-sha1 (-> commit first (clojure.string/split #" ") second) 
+        ]
+    (prn commit)
+    (prn  tree-sha1)
+    )
   )
+
 
 
 (comment
   (def project-root "/home/sto/tmp/test")
+  (init {:dir project-root})
+  
   (def index (parse-git-index (str project-root "/.git/index")))
 
   (def index (add project-root
                   "src/mul.clj"))
 
-  (let [commit-content (->
-                        (str project-root
-                             "/.git/objects/42/47910eee1f88e3d5d9ff3b5c6f0797d73294e6")
-                        ;;(str project-root "/.git/objects/23/289bbde2cf96efd692f68e6510f9d8309538c4")
-                        ;;(str project-root "/.git/objects/03/e9b87fb51cbdac96dfe46e251812ed9f5822ca")
-                        io/suck
-                        io/decompress
-                        unwrap)
-        commit (-> (clojure.string/join "" (map char commit-content))
-                   (clojure.string/split #"\n"))
-        tree-sha1 (-> commit first (clojure.string/split #" ") second) ]
-    (prn commit)
-    (prn  tree-sha1)
-
-    )
-
-  (-> #_(str project-root
-             "/.git/objects/b2/eaac6b6758a4e194640976a1ff3811df803722")
-      (str project-root
-           "/.git/objects/42/47910eee1f88e3d5d9ff3b5c6f0797d73294e6")
-      io/suck
-      io/decompress
-      vd/seq->char)
-  
-  (init {:dir project-root}) 
   (write-blob project-root "test content\n")
+  
+  (cat-file project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
+  
+  (parse-commit-object project-root "6602853e69285bfbed6d80480289278600c02a92")
+
 
   (let [tree-seq (->> (str project-root
-                           "/.git/objects/03/e9b87fb51cbdac96dfe46e251812ed9f5822ca")
+                           "/.git/objects/55/e3e7f64afee31012c8c00c56cdd97d95b5e31c"
+                           )
                       io/suck
                       io/decompress)]
+    (-> tree-seq vd/seq->char)
     (parse-tree-object tree-seq)
     )
   
