@@ -306,16 +306,5 @@
 
   (vd/seq->char (cat-file project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62"))
 
-  (let [tree-seq (->> (str project-root
-                           "/.git/objects/55/e3e7f64afee31012c8c00c56cdd97d95b5e31c"
-                           )
-                      io/suck
-                      io/decompress)]
-    (-> tree-seq vd/seq->char)
-    (parse-tree-object tree-seq)
-    )
-
-
-
 
   )
