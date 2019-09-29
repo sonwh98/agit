@@ -272,6 +272,7 @@
 
   )
 
+
 (comment
   (def project-root "/home/sto/tmp/test")
   (def index (parse-git-index (str project-root "/.git/index")))
@@ -286,22 +287,33 @@
                         ;;(str project-root "/.git/objects/03/e9b87fb51cbdac96dfe46e251812ed9f5822ca")
                         io/suck
                         io/decompress
-                        unwrap)]
-    (-> (clojure.string/join "" (map char commit-content))
-        
-        (clojure.string/split #"\n"))
-    ;;(clojure.string/split raw #"\n")
+                        unwrap)
+        commit (-> (clojure.string/join "" (map char commit-content))
+                   (clojure.string/split #"\n"))
+        tree-sha1 (-> commit first (clojure.string/split #" ") second) ]
+    (prn commit)
+    (prn  tree-sha1)
+
     )
 
+  (-> #_(str project-root
+             "/.git/objects/b2/eaac6b6758a4e194640976a1ff3811df803722")
+      (str project-root
+           "/.git/objects/42/47910eee1f88e3d5d9ff3b5c6f0797d73294e6")
+      io/suck
+      io/decompress
+      vd/seq->char)
+  
   (init {:dir project-root}) 
   (write-blob project-root "test content\n")
 
-  (parse-tree-object (->> (str project-root
-                               "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62"
-                               )
-                          io/suck
-                          io/decompress
-                          ))
+  (let [tree-seq (->> (str project-root
+                           "/.git/objects/03/e9b87fb51cbdac96dfe46e251812ed9f5822ca")
+                      io/suck
+                      io/decompress)]
+    (parse-tree-object tree-seq)
+    )
+  
 
 
   
