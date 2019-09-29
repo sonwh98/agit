@@ -285,14 +285,7 @@
 
   (init {:dir project-root}) 
   (write-blob project-root "test content\n")
-  ;;.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
 
-  ;;good
-  ;;86f876800853c4cb1de6f829cb1af9faca449d1a  .git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
-
-  ;;bad
-  ;;b058604f025b0162f1f8df32838232918bffd0aa  .git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
-  
   (parse-tree-object (->> (str project-root
                                "/.git/objects/61/8855e49e7bf8dbdbb2b1275d37399db2a7ed62"
                                )
