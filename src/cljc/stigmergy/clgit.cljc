@@ -135,7 +135,7 @@
         entry-count (vd/seq->int (index-pt :entry-count))
         entries (index-pt :entries)
         entry-pt (vd/pointer struct-entry entries)
-        index-map {:signature (vd/seq->char (index-pt :signature))
+        index-map {:signature (vd/seq->char-seq (index-pt :signature))
                    :version (vd/seq->int (index-pt :version))
                    :entry-count entry-count
                    :entries (for [i (range entry-count)]
@@ -281,7 +281,7 @@
 (defn parse-commit-object [project-root sha1]
   (let [commit-content (unwrap (cat-file project-root sha1))
         commit (-> #_(clojure.string/join "" (map char commit-content))
-                   (char-seq->str (vd/seq->char commit-content))
+                   (char-seq->str (vd/seq->char-seq commit-content))
                    (clojure.string/split #"\n"))
         msg (last commit)]
     ;;commit
@@ -320,7 +320,7 @@
   (parse-tree-object project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
   (parse-tree-object project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62")
 
-  (vd/seq->char (cat-file project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62"))
+  (vd/seq->char-seq (cat-file project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62"))
 
 
   (parse-commit-object project-root "51c728e8d4c98187f8dcce40803982d44378d838")
@@ -342,4 +342,5 @@
   (seq "tree d082d83094e4496c05344c3c4a3a259744df3ba4")
   (util/index-of (seq "tree d082d83094e4496c05344c3c4a3a259744df3ba4") \space)
   (char-seq->str "")
+  (cat-file project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
   )
