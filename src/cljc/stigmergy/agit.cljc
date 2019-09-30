@@ -1,4 +1,4 @@
-(ns stigmergy.clgit
+(ns stigmergy.agit
   (:require [stigmergy.io :as io]
             [stigmergy.voodoo :as vd]
             [stigmergy.tily :as util]))
