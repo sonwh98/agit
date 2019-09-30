@@ -275,12 +275,26 @@
           (recur (drop sha1-end entries) (conj results tree-entry)))
         results))))
 
+(defn char-seq->str [a-seq]
+  (clojure.string/join "" a-seq))
+
 (defn parse-commit-object [project-root sha1]
   (let [commit-content (unwrap (cat-file project-root sha1))
-        commit (-> (clojure.string/join "" (map char commit-content))
+        commit (-> #_(clojure.string/join "" (map char commit-content))
+                   (char-seq->str (vd/seq->char commit-content))
                    (clojure.string/split #"\n"))
-        tree-sha1 (-> commit first (clojure.string/split #" ") second)]
-    commit))
+        msg (last commit)]
+    ;;commit
+    (into {"message" (char-seq->str msg)}
+          (for [line (drop-last 1 commit)
+                :let [i (util/index-of (seq line) \space)]
+                :when (and (->  line clojure.string/blank? not)
+                           (-> i nil? not))]
+            (let [k (char-seq->str (take i line))
+                  v (char-seq->str (drop (inc i) line))]
+              [k v])
+            ))
+    ))
 
 (defn parse-blob-object [project-root sha1]
   (let [blob-content (unwrap (cat-file project-root sha1))]
@@ -321,5 +335,11 @@
   (-> (parse-blob-object project-root "1269488f7fb1f4b56a8c0e5eb48cecbfadfa9219")
       vd/seq->str
       )
-  
+
+  (parse-commit-object project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
+  (parse-tree-object project-root "e386f932851a893109d25351034204ac3123e8ba")
+
+  (seq "tree d082d83094e4496c05344c3c4a3a259744df3ba4")
+  (util/index-of (seq "tree d082d83094e4496c05344c3c4a3a259744df3ba4") \space)
+  (char-seq->str "")
   )
