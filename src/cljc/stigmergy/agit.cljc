@@ -54,19 +54,6 @@
   (let [header (git-object-header object-type a-seq)]
     (concat header (io/to-seq a-seq))))
 
-#_(defn index-of
-    "find index of a value v in a-seq starting from s"
-    ([a-seq v s]
-     (let [found (filter (fn [[index value]]
-                           (and (>= index s)
-                                (= value v)))
-                         (util/with-index a-seq))
-           found-index (ffirst found)]
-       found-index))
-    ([a-seq v]
-     "find index of a value v in a-seq starting from 0"
-     (index-of a-seq v 0)))
-
 (defn get-object-type-and-size [a-seq]
   (let [space 32
         null 0
