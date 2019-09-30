@@ -1,4 +1,4 @@
-(defproject  stigmergy/clgit "0.0.1-SNAPSHOT"
+(defproject  stigmergy/agit "0.0.1-SNAPSHOT"
   :min-lein-version "2.8.3" 
   :dependencies [[org.clojure/clojure "1.10.1"]  
                  [org.clojure/clojurescript "1.10.520"]
