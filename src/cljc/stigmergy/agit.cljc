@@ -284,6 +284,22 @@
     )
   )
 
+(defn ls [project-root]
+  (let [files-n-dirs (-> (str project-root "/.git/objects")
+                         clojure.java.io/file
+                         file-seq)
+        files (filter #(.isFile %) files-n-dirs)
+        path-type-sha1 (map #(let [path (.getPath %)
+                                   i (util/index-of path ".git")
+                                   git-path (-> (drop i path)
+                                                vd/seq->str)
+                                   sha1 (-> (take-last 42 git-path)
+                                            vd/seq->str
+                                            (clojure.string/replace #"/" ""))]
+                               [git-path (vd/seq->str (cat-file project-root sha1)) sha1])
+                            files)]
+    path-type-sha1))
+
 (comment
   (def project-root "/home/sto/tmp/test")
   (init {:dir project-root})
@@ -293,7 +309,7 @@
   (def index (add project-root
                   "resources/data.edn"
                   "resources/hello.js" 
-                   ))
+                  ))
   (write-blob project-root "test content\n")
   
 
@@ -301,4 +317,9 @@
       vd/seq->char-seq
       vd/char-seq->str)
   (parse-commit-object project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
+
+  (def f (ls project-root))
+  (first f)
+  (def p (-> f first (.getPath)))
+  (util/index-of "abcdefg" "bc")
   )
