@@ -264,11 +264,11 @@
 
 (defn parse-commit-object [project-root sha1]
   (let [commit-content (unwrap (cat-file project-root sha1))
-        commit (-> #_(clojure.string/join "" (map char commit-content))
-                   (vd/char-seq->str (vd/seq->char-seq commit-content))
+        commit (-> commit-content
+                   vd/seq->char-seq 
+                   vd/char-seq->str 
                    (clojure.string/split #"\n"))
         msg (last commit)]
-    (prn commit)
     (into {"message" (vd/char-seq->str msg)}
           (for [line (drop-last 1 commit)
                 :let [i (util/index-of (seq line) \space)]
@@ -291,37 +291,14 @@
   (def index (parse-git-index (str project-root "/.git/index")))
 
   (def index (add project-root
-                  "src/mul.clj"))
-
+                  "resources/data.edn"
+                  "resources/hello.js" 
+                   ))
   (write-blob project-root "test content\n")
   
-  (cat-file project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
-  
-  (parse-commit-object project-root "6602853e69285bfbed6d80480289278600c02a92")
 
-  (parse-tree-object project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
-  (parse-tree-object project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62")
-
-  (vd/seq->char-seq (cat-file project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62"))
-
-
-  (parse-commit-object project-root "51c728e8d4c98187f8dcce40803982d44378d838")
-  (parse-tree-object project-root "127ad2ef366f53e843334fb97cd4c29c6386d8f0")
-  (parse-tree-object project-root "4bf3de4f6cee771dd26e4fc2f622d81acaec30fe")
-  (parse-commit-object project-root "75ea033015e19b68f449fad44d52384f7b582b09")
-  (parse-tree-object project-root "d3595c5162b9f12b3acfd103ec2c35ddd9e2172a")
-
-  (parse-commit-object project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
-  (parse-tree-object project-root "d082d83094e4496c05344c3c4a3a259744df3ba4")
-  (parse-tree-object project-root "c7b2b064d38d017406637ceb61cb1fbec0b81c92")
-  (-> (parse-blob-object project-root "1269488f7fb1f4b56a8c0e5eb48cecbfadfa9219")
-      vd/seq->str
-      )
-
+  (-> (cat-file project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
+      vd/seq->char-seq
+      vd/char-seq->str)
   (parse-commit-object project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
-  (parse-tree-object project-root "e386f932851a893109d25351034204ac3123e8ba")
-
-  (seq "tree d082d83094e4496c05344c3c4a3a259744df3ba4")
-  (util/index-of (seq "tree d082d83094e4496c05344c3c4a3a259744df3ba4") \space)
-  (cat-file project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
   )
