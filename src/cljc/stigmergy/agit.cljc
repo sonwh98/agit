@@ -310,6 +310,11 @@
                   "resources/data.edn"
                   "resources/hello.js" 
                   ))
+
+  (def index (add project-root
+                  "project.clj"
+                  ))
+  
   (write-blob project-root "test content\n")
   
 
@@ -318,8 +323,18 @@
       vd/char-seq->str)
   (parse-commit-object project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
 
-  (def f (ls project-root))
-  (first f)
-  (def p (-> f first (.getPath)))
-  (util/index-of "abcdefg" "bc")
+  (def commit-objects (filter #(let [t (second %)]
+                                 (re-find #"commit" t))
+                              (ls project-root)))
+  (def gobj (ls project-root))
+  (parse-commit-object project-root "3176b3cf556264e02231b88c05964667966ac850")
+
+  (parse-tree-object project-root "c96a08a0758e0e2d8303072ace8e57055a14d4a4")
+  (-> (cat-file project-root "c96a08a0758e0e2d8303072ace8e57055a14d4a4")
+      vd/seq->char-seq
+      vd/char-seq->str
+      )
   )
+
+
+
