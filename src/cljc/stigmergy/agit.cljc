@@ -204,6 +204,9 @@
                    :entry-count 0
                    :entries []}))
         entries (:entries index)
+        entries (remove (fn [{:keys [name] :as entry}]
+                          (util/some-in? name files))
+                        entries)
         new-entries (for [file files]
                       (let [file-attributes (io/lstat (str project-root "/" file))
                             ctime (file-attributes "ctime")
