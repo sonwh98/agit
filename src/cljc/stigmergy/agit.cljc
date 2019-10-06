@@ -246,6 +246,11 @@
         io/suck
         io/decompress)))
 
+(defn cat-file-str [project-root sha1]
+    (-> (cat-file project-root sha1)
+      vd/seq->char-seq
+      vd/char-seq->str))
+
 (defn parse-tree-object [project-root sha1]
   (let [tree-seq (cat-file project-root sha1)]
     (loop [entries (unwrap tree-seq)
@@ -330,11 +335,10 @@
   (parse-commit-object project-root "3176b3cf556264e02231b88c05964667966ac850")
 
   (parse-tree-object project-root "c96a08a0758e0e2d8303072ace8e57055a14d4a4")
-  (-> (cat-file project-root "c96a08a0758e0e2d8303072ace8e57055a14d4a4")
+  (-> (cat-file project-root "8101645cf456847bf0abc08224cebf9d3f19ab49")
       vd/seq->char-seq
       vd/char-seq->str
       )
+  (cat-file-str project-root "8101645cf456847bf0abc08224cebf9d3f19ab49")
+  
   )
-
-
-
