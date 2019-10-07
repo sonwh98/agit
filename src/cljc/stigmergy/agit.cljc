@@ -194,7 +194,7 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
-(defn remove-dup [project-files & files]
+(defn remove-dup [project-root & files]
   (let [git-dir (str project-root "/.git")
          index (let [index (parse-git-index (str git-dir "/index"))]
                  (if index
@@ -210,19 +210,8 @@
 
 (defn rm [project-root & files]
   (let [git-dir (str project-root "/.git")
-        index (let [index (parse-git-index (str git-dir "/index"))]
-                (if index
-                  index
-                  {:signature '(\D \I \R \C)
-                   :version 2
-                   :entry-count 0
-                   :entries []}))
-        entries (:entries index)
-        entries (vec (remove (fn [{:keys [name] :as entry}]
-                               (util/some-in? name files))
-                             entries))
+        entries (remove-dup project-root files)
         entry-count (count entries)
-        
         index (assoc index :entries entries :entry-count entry-count)
         index-seq (let [index-seq (-> index index-map->seq)
                         unknown [57 -40 -112 19 -98 -27 53 108 126 -11 114 33 108 -21 -51 39
