@@ -194,36 +194,7 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
-(defn remove-dup [project-root & files]
-  (let [git-dir (str project-root "/.git")
-         index (let [index (parse-git-index (str git-dir "/index"))]
-                 (if index
-                   index
-                   {:signature '(\D \I \R \C)
-                    :version 2
-                    :entry-count 0
-                    :entries []}))
-         entries (:entries index)]
-    (vec (remove (fn [{:keys [name] :as entry}]
-                                (util/some-in? name files))
-                              entries))))
-
-(defn rm [project-root & files]
-  (let [git-dir (str project-root "/.git")
-        entries (remove-dup project-root files)
-        entry-count (count entries)
-        index (assoc index :entries entries :entry-count entry-count)
-        index-seq (let [index-seq (-> index index-map->seq)
-                        unknown [57 -40 -112 19 -98 -27 53 108 126 -11 114 33 108 -21 -51 39
-                                     -86 65 -7 -33]]
-                    (if (zero? entry-count)
-                      (concat index-seq unknown)
-                      index-seq))]
-    (->> index-seq
-           (io/squirt (str project-root "/.git/index")))
-    index))
-
-(defn add [project-root & files]
+(defn remove-index-entry-dup [project-root files]
   (let [git-dir (str project-root "/.git")
         index (let [index (parse-git-index (str git-dir "/index"))]
                 (if index
@@ -233,9 +204,29 @@
                    :entry-count 0
                    :entries []}))
         entries (:entries index)
-        entries (remove (fn [{:keys [name] :as entry}]
-                          (util/some-in? name files))
-                        entries)
+        entries (vec (remove (fn [{:keys [name] :as entry}]
+                               (util/some-in? name files))
+                             entries))]
+    (assoc index :entries entries :entry-count (count entries))))
+
+(defn rm [project-root & files]
+  (let [index (remove-index-entry-dup project-root files)
+        entries (:entries index)
+        entry-count (:entry-count index)
+        index (assoc index :entries entries)
+        index-seq (let [index-seq (-> index index-map->seq)
+                        unknown [57 -40 -112 19 -98 -27 53 108 126 -11 114 33 108 -21 -51 39
+                                     -86 65 -7 -33]]
+                    (if (zero? entry-count)
+                      (concat index-seq unknown)
+                      index-seq))]
+    (->> index-seq
+         (io/squirt (str project-root "/.git/index")))
+    index))
+
+(defn add [project-root & files]
+  (let [index (remove-index-entry-dup project-root files)
+        entries (:entries index)
         new-entries (for [file files]
                       (let [file-attributes (io/lstat (str project-root "/" file))
                             ctime (file-attributes "ctime")
