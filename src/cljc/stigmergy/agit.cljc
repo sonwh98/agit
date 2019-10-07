@@ -215,10 +215,11 @@
         entry-count (:entry-count index)
         index (assoc index :entries entries)
         index-seq (let [index-seq (-> index index-map->seq)
-                        unknown [57 -40 -112 19 -98 -27 53 108 126 -11 114 33 108 -21 -51 39
-                                     -86 65 -7 -33]]
+                        sha1-bits 160
+                        num-bytes (/ sha1-bits 8)
+                        empty-sha1 (repeat num-bytes 0)]
                     (if (zero? entry-count)
-                      (concat index-seq unknown)
+                      (concat index-seq empty-sha1)
                       index-seq))]
     (->> index-seq
          (io/squirt (str project-root "/.git/index")))
