@@ -194,7 +194,7 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
-(defn remove-index-entry-dup [project-root files]
+(defn remove-entry-duplicates [project-root files]
   (let [git-dir (str project-root "/.git")
         index (let [index (parse-git-index (str git-dir "/index"))]
                 (if index
@@ -210,7 +210,7 @@
     (assoc index :entries entries :entry-count (count entries))))
 
 (defn rm [project-root & files]
-  (let [index (remove-index-entry-dup project-root files)
+  (let [index (remove-entry-duplicates project-root files)
         entries (:entries index)
         entry-count (:entry-count index)
         index (assoc index :entries entries)
@@ -226,7 +226,7 @@
     index))
 
 (defn add [project-root & files]
-  (let [index (remove-index-entry-dup project-root files)
+  (let [index (remove-entry-duplicates project-root files)
         entries (:entries index)
         new-entries (for [file files]
                       (let [file-attributes (io/lstat (str project-root "/" file))
