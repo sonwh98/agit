@@ -194,6 +194,46 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
+(defn remove-dup [project-files & files]
+  (let [git-dir (str project-root "/.git")
+         index (let [index (parse-git-index (str git-dir "/index"))]
+                 (if index
+                   index
+                   {:signature '(\D \I \R \C)
+                    :version 2
+                    :entry-count 0
+                    :entries []}))
+         entries (:entries index)]
+    (vec (remove (fn [{:keys [name] :as entry}]
+                                (util/some-in? name files))
+                              entries))))
+
+(defn rm [project-root & files]
+  (let [git-dir (str project-root "/.git")
+        index (let [index (parse-git-index (str git-dir "/index"))]
+                (if index
+                  index
+                  {:signature '(\D \I \R \C)
+                   :version 2
+                   :entry-count 0
+                   :entries []}))
+        entries (:entries index)
+        entries (vec (remove (fn [{:keys [name] :as entry}]
+                               (util/some-in? name files))
+                             entries))
+        entry-count (count entries)
+        
+        index (assoc index :entries entries :entry-count entry-count)
+        index-seq (let [index-seq (-> index index-map->seq)
+                        unknown [57 -40 -112 19 -98 -27 53 108 126 -11 114 33 108 -21 -51 39
+                                     -86 65 -7 -33]]
+                    (if (zero? entry-count)
+                      (concat index-seq unknown)
+                      index-seq))]
+    (->> index-seq
+           (io/squirt (str project-root "/.git/index")))
+    index))
+
 (defn add [project-root & files]
   (let [git-dir (str project-root "/.git")
         index (let [index (parse-git-index (str git-dir "/index"))]
@@ -316,16 +356,26 @@
 
   (def index (add project-root
                   "resources/data.edn"
-                  "resources/hello.js" 
+                  #_"resources/hello.js" 
                   ))
 
   (def index (add project-root
                   "project.clj"
                   ))
+
+  (def index (rm project-root "project.clj"))
   
   (write-blob project-root "test content\n")
   
+  (-> (str project-root "/.git/index")
+      io/suck)
+  
+  ;;good index
+  ;;[68 73 82 67 0 0 0 2 0 0 0 0 57 -40 -112 19 -98 -27 53 108 126 -11 114 33 108 -21 -51 39 -86 65 -7 -33]
 
+  ;;bad index
+  ;;[68 73 82 67 0 0 0 2 0 0 0 0]
+  
   (-> (cat-file project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
       vd/seq->char-seq
       vd/char-seq->str)
