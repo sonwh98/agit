@@ -194,6 +194,7 @@
                         Integer/MAX_VALUE)]
     [ctime-sec ctime-nsec]))
 
+;;TODO should take index-map, files and return index-map
 (defn remove-entry-duplicates [project-root files]
   (let [git-dir (str project-root "/.git")
         index (let [index (parse-git-index (str git-dir "/index"))]
