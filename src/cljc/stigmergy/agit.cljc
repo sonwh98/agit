@@ -292,7 +292,7 @@
           (recur (drop sha1-end entries) (conj results tree-entry)))
         results))))
 
-(defn parse-commit-object [project-root sha1]
+(defn commit->map [project-root sha1]
   (let [commit-content (unwrap (cat-file project-root sha1))
         commit (-> commit-content
                    vd/seq->char-seq 
@@ -351,29 +351,29 @@
   
   (-> (str project-root "/.git/index")
       io/suck)
-  
-  ;;good index
-  ;;[68 73 82 67 0 0 0 2 0 0 0 0 57 -40 -112 19 -98 -27 53 108 126 -11 114 33 108 -21 -51 39 -86 65 -7 -33]
 
-  ;;bad index
-  ;;[68 73 82 67 0 0 0 2 0 0 0 0]
-  
   (-> (cat-file project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
       vd/seq->char-seq
       vd/char-seq->str)
-  (parse-commit-object project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
+  (commit->map project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
 
-  (def commit-objects (filter #(let [t (second %)]
-                                 (re-find #"commit" t))
-                              (ls project-root)))
+  (def cm (filter #(let [t (second %)]
+                     (re-find #"commit" t))
+                  (ls project-root)))
+  
   (def gobj (ls project-root))
-  (parse-commit-object project-root "3176b3cf556264e02231b88c05964667966ac850")
+  (commit->map project-root "7635ab143aa4540596ea8504f5bd772b4b421398")
 
-  (parse-tree-object project-root "c96a08a0758e0e2d8303072ace8e57055a14d4a4")
+  (parse-tree-object project-root "386cc71002189b57faf27dc5347f01288e9c3a5d")
   (-> (cat-file project-root "8101645cf456847bf0abc08224cebf9d3f19ab49")
       vd/seq->char-seq
       vd/char-seq->str
       )
-  (cat-file-str project-root "8101645cf456847bf0abc08224cebf9d3f19ab49")
+  (cat-file-str project-root "841df0c72dd7022f01a85a2ceb96967118ff228a")
+  (commit->map project-root "090da09190eed5522854634b8e22a440bedd1cba")
+
+  (parse-tree-object project-root "d11d4425f2f5c3b2044e4e3d5ba312673d56a265")
   
+  (parse-tree-object project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
+  (parse-tree-object project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62")
   )
