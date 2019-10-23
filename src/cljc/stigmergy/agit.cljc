@@ -292,6 +292,15 @@
           (recur (drop sha1-end entries) (conj results tree-entry)))
         results))))
 
+(defn person-str->person-timestamp [person]
+  (let [fields (clojure.string/split person #" ")
+        c (count fields)
+        person (clojure.string/join " " (take (- c 2) fields))
+        timestamp (take-last 2 fields)
+        timestamp [(-> timestamp first Integer/parseInt)
+                   (->> timestamp second (drop-last 2) vd/char-seq->str Integer/parseInt)]]
+    [person timestamp]))
+
 (defn commit->map [project-root sha1]
   (let [commit-content (unwrap (cat-file project-root sha1))
         commit (-> commit-content
@@ -309,9 +318,15 @@
                         vd/char-seq->str
                         keyword)
                   v (vd/char-seq->str (drop (inc i) line))]
-              (prn "k=" k)
-              (prn "v=" v)
-              [k v])))))
+              (cond
+                (= k :author) (let [[person timestamp] (person-str->person-timestamp v)]
+                                [:author {:person person
+                                          :timestamp timestamp}])
+                (= k :committer) (let [[person timestamp] (person-str->person-timestamp v)]
+                                   [:committer {:person person
+                                                :timestamp timestamp}])
+                
+                :else [k v]))))))
 
 (defn parse-blob-object [project-root sha1]
   (let [blob-content (unwrap (cat-file project-root sha1))]
