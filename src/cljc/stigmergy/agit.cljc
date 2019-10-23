@@ -299,13 +299,18 @@
                    vd/char-seq->str 
                    (clojure.string/split #"\n"))
         msg (last commit)]
-    (into {"message" (vd/char-seq->str msg)}
+    (into {:sha1 sha1
+           :message (vd/char-seq->str msg)}
           (for [line (drop-last 1 commit)
                 :let [i (util/index-of (seq line) \space)]
                 :when (and (->  line clojure.string/blank? not)
                            (-> i nil? not))]
-            (let [k (vd/char-seq->str (take i line))
+            (let [k (-> (take i line)
+                        vd/char-seq->str
+                        keyword)
                   v (vd/char-seq->str (drop (inc i) line))]
+              (prn "k=" k)
+              (prn "v=" v)
               [k v])))))
 
 (defn parse-blob-object [project-root sha1]
@@ -333,6 +338,7 @@
 (defn log [project-root]
   (let [ls-commits (filter #(re-find #"commit" (second %))
                            (ls project-root))]
+    (prn "ls-commits=" ls-commits)
     (map (fn [[path commit-type sha1]]
            (commit->map project-root sha1))
      ls-commits)))
