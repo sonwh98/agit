@@ -353,10 +353,12 @@
 (defn log [project-root]
   (let [ls-commits (filter #(re-find #"commit" (second %))
                            (ls project-root))]
-    (prn "ls-commits=" ls-commits)
-    (map (fn [[path commit-type sha1]]
-           (commit->map project-root sha1))
-     ls-commits)))
+    (->> ls-commits
+         (map (fn [[path commit-type sha1]]
+                (commit->map project-root sha1)))
+         (sort-by (fn [commit-map]
+                    (-> commit-map :author :timestamp first)))
+         reverse)))
 
 (comment
   (def project-root "/home/sto/tmp/test")
