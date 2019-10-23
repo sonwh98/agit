@@ -330,6 +330,13 @@
                             files)]
     path-type-sha1))
 
+(defn log [project-root]
+  (let [ls-commits (filter #(re-find #"commit" (second %))
+                           (ls project-root))]
+    (map (fn [[path commit-type sha1]]
+           (commit->map project-root sha1))
+     ls-commits)))
+
 (comment
   (def project-root "/home/sto/tmp/test")
   (init {:dir project-root})
@@ -345,6 +352,8 @@
                   "project.clj"
                   ))
 
+  (def cm (log project-root))
+  
   (def index (rm project-root "project.clj"))
   
   (write-blob project-root "test content\n")
@@ -357,9 +366,7 @@
       vd/char-seq->str)
   (commit->map project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
 
-  (def cm (filter #(let [t (second %)]
-                     (re-find #"commit" t))
-                  (ls project-root)))
+
   
   (def gobj (ls project-root))
   (commit->map project-root "7635ab143aa4540596ea8504f5bd772b4b421398")
@@ -370,7 +377,7 @@
       vd/char-seq->str
       )
   (cat-file-str project-root "841df0c72dd7022f01a85a2ceb96967118ff228a")
-  (commit->map project-root "090da09190eed5522854634b8e22a440bedd1cba")
+  (commit->map project-root "7635ab143aa4540596ea8504f5bd772b4b421398")
 
   (parse-tree-object project-root "d11d4425f2f5c3b2044e4e3d5ba312673d56a265")
   
