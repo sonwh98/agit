@@ -297,8 +297,8 @@
         c (count fields)
         person (clojure.string/join " " (take (- c 2) fields))
         timestamp (take-last 2 fields)
-        timestamp [(-> timestamp first Integer/parseInt)
-                   (->> timestamp second (drop-last 2) vd/char-seq->str Integer/parseInt)]]
+        timestamp {:sec (-> timestamp first Integer/parseInt)
+                   :timezone (->> timestamp second (drop-last 2) vd/char-seq->str Integer/parseInt)}]
     [person timestamp]))
 
 (defn commit->map [project-root sha1]
@@ -361,14 +361,14 @@
          reverse)))
 
 (comment
-  (def project-root "/home/sto/tmp/test")
+  (def project-root "/home/sto/tmp/agit")
   (init {:dir project-root})
   
   (def index (parse-git-index (str project-root "/.git/index")))
 
   (def index (add project-root
-                  "resources/data.edn"
-                  #_"resources/hello.js" 
+                  "project.clj"
+                  "parse_git_index.c" 
                   ))
 
   (def index (add project-root
