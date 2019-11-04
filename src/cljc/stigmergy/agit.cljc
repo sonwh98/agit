@@ -148,7 +148,7 @@
     index-map))
 
 (defn index-map->seq
-  "convert git index in a structured map into a sequence of bytes by stripping out the keys
+  "convert git index from a structured map into a sequence of bytes by stripping out the keys
   from index-map and flatten the values into a sequence of bytes"
   [index-map]
   (let [int32->seq (fn [value]
@@ -328,6 +328,10 @@
            :message (vd/char-seq->str msg)}
           kv-pairs)))
 
+(defn commit-map->seq [cm]
+  
+  )
+
 (defn parse-blob-object [project-root sha1]
   (let [blob-content (unwrap (cat-file project-root sha1))]
     blob-content
@@ -357,7 +361,7 @@
          (map (fn [[path commit-type sha1]]
                 (commit->map project-root sha1)))
          (sort-by (fn [commit-map]
-                    (-> commit-map :author :timestamp first)))
+                    (-> commit-map :author :timestamp :sec)))
          reverse)))
 
 (comment
