@@ -329,8 +329,17 @@
           kv-pairs)))
 
 (defn commit-map->seq [cm]
-  
-  )
+  (let [ks [:tree :parent :author :committer :message]
+        commit-lines (for [k ks]
+                       (cond
+                         (or  (= k :author)
+                              (= k :committer)) (let [{:keys [person timestamp]} (k cm)
+                                                      {:keys [sec timezone]} timestamp]
+                                                  (str (name k) " " person " " sec " " timezone))
+                         (= k :message) (str "\n" (k cm))
+                         :else (str (name k) " " (k cm))))
+        commit-lines-as-str (clojure.string/join "\n" commit-lines)]
+    (vd/str->seq commit-lines-as-str)))
 
 (defn parse-blob-object [project-root sha1]
   (let [blob-content (unwrap (cat-file project-root sha1))]
@@ -380,7 +389,8 @@
                   ))
 
   (def cm (log project-root))
-  
+
+  (-> cm first commit-map->seq vd/seq->char-seq vd/char-seq->str)
   (def index (rm project-root "project.clj"))
   
   (write-blob project-root "test content\n")
