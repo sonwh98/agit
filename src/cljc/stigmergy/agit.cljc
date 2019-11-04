@@ -307,26 +307,26 @@
                    vd/seq->char-seq 
                    vd/char-seq->str 
                    (clojure.string/split #"\n"))
-        msg (last commit)]
+        msg (last commit)
+        kv-pairs (for [line (drop-last 1 commit)
+                       :let [i (util/index-of (seq line) \space)]
+                       :when (and (->  line clojure.string/blank? not)
+                                  (-> i nil? not))]
+                   (let [k (-> (take i line)
+                               vd/char-seq->str
+                               keyword)
+                         v (vd/char-seq->str (drop (inc i) line))]
+                     (cond
+                       (= k :author) (let [[person timestamp] (person-str->person-timestamp v)]
+                                       [:author {:person person
+                                                 :timestamp timestamp}])
+                       (= k :committer) (let [[person timestamp] (person-str->person-timestamp v)]
+                                          [:committer {:person person
+                                                       :timestamp timestamp}])
+                       :else [k v])))]
     (into {:sha1 sha1
            :message (vd/char-seq->str msg)}
-          (for [line (drop-last 1 commit)
-                :let [i (util/index-of (seq line) \space)]
-                :when (and (->  line clojure.string/blank? not)
-                           (-> i nil? not))]
-            (let [k (-> (take i line)
-                        vd/char-seq->str
-                        keyword)
-                  v (vd/char-seq->str (drop (inc i) line))]
-              (cond
-                (= k :author) (let [[person timestamp] (person-str->person-timestamp v)]
-                                [:author {:person person
-                                          :timestamp timestamp}])
-                (= k :committer) (let [[person timestamp] (person-str->person-timestamp v)]
-                                   [:committer {:person person
-                                                :timestamp timestamp}])
-                
-                :else [k v]))))))
+          kv-pairs)))
 
 (defn parse-blob-object [project-root sha1]
   (let [blob-content (unwrap (cat-file project-root sha1))]
