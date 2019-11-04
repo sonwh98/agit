@@ -301,13 +301,11 @@
                    :timezone (->> timestamp second (drop-last 2) vd/char-seq->str Integer/parseInt)}]
     [person timestamp]))
 
-(defn commit->map [project-root sha1]
-  (let [commit-content (unwrap (cat-file project-root sha1))
-        commit (-> commit-content
+(defn commit-seq->map [seq-of-bytes]
+  (let [commit (-> seq-of-bytes
                    vd/seq->char-seq 
                    vd/char-seq->str 
                    (clojure.string/split #"\n"))
-        msg (last commit)
         kv-pairs (for [line (drop-last 1 commit)
                        :let [i (util/index-of (seq line) \space)]
                        :when (and (->  line clojure.string/blank? not)
@@ -324,8 +322,7 @@
                                           [:committer {:person person
                                                        :timestamp timestamp}])
                        :else [k v])))]
-    (into {:sha1 sha1
-           :message (vd/char-seq->str msg)}
+    (into {:message (-> commit last vd/char-seq->str)}
           kv-pairs)))
 
 (defn commit-map->seq [cm]
@@ -368,7 +365,9 @@
                            (ls project-root))]
     (->> ls-commits
          (map (fn [[path commit-type sha1]]
-                (commit->map project-root sha1)))
+                (-> (cat-file project-root sha1)
+                    unwrap
+                    commit-seq->map)))
          (sort-by (fn [commit-map]
                     (-> commit-map :author :timestamp :sec)))
          reverse)))
@@ -401,12 +400,11 @@
   (-> (cat-file project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
       vd/seq->char-seq
       vd/char-seq->str)
-  (commit->map project-root "8776260b4af43343308fd020dcac15eb8d8becbd")
+  (->  project-root "8776260b4af43343308fd020dcac15eb8d8becbd"
+       commit-seq->map)
 
-
-  
   (def gobj (ls project-root))
-  (commit->map project-root "7635ab143aa4540596ea8504f5bd772b4b421398")
+
 
   (parse-tree-object project-root "386cc71002189b57faf27dc5347f01288e9c3a5d")
   (-> (cat-file project-root "8101645cf456847bf0abc08224cebf9d3f19ab49")
@@ -414,7 +412,6 @@
       vd/char-seq->str
       )
   (cat-file-str project-root "841df0c72dd7022f01a85a2ceb96967118ff228a")
-  (commit->map project-root "7635ab143aa4540596ea8504f5bd772b4b421398")
 
   (parse-tree-object project-root "d11d4425f2f5c3b2044e4e3d5ba312673d56a265")
   
