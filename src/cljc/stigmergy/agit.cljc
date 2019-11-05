@@ -367,7 +367,8 @@
          (map (fn [[path commit-type sha1]]
                 (-> (cat-file project-root sha1)
                     unwrap
-                    commit-seq->map)))
+                    commit-seq->map
+                    (assoc :sha1 sha1))))
          (sort-by (fn [commit-map]
                     (-> commit-map :author :timestamp :sec)))
          reverse)))
@@ -384,9 +385,24 @@
                   ))
 
   (def index (add project-root
-                  "project.clj"
+                  "bar.txt"
                   ))
 
+  (def c {:message "add bar.txt",
+          :tree "8cdc6741aa8d26b7db1cfa914012415386fb2366",
+          :parent "a53f49fbc92a9f2168d1f6e82829f1c4bda159e0",
+          :author
+          {:person "sto <son.c.to@gmail.com>",
+           :timestamp {:sec 1572836765, :timezone -5}},
+          :committer
+          {:person "sto <son.c.to@gmail.com>",
+           :timestamp {:sec 1572836765, :timezone -5}}})
+
+  (-> (cat-file project-root "8cdc6741aa8d26b7db1cfa914012415386fb2366")
+      ;; vd/seq->char-seq
+      ;; vd/char-seq->str
+      commit-seq->map
+      )
   (def cm (log project-root))
 
   (-> cm first commit-map->seq vd/seq->char-seq vd/char-seq->str)
