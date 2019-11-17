@@ -373,6 +373,22 @@
                     (-> commit-map :author :timestamp :sec)))
          reverse)))
 
+(defn status [project-root]
+  (let [commits (log project-root)
+        commited-hashes (set (flatten (for [c commits
+                                            :let [tree (:tree c)]]
+                                        (map :sha1
+                                             (parse-tree-object project-root tree)))))
+        index (parse-git-index (str project-root "/.git/index"))
+        index-entries (:entries index)
+        index-file-hashes (map (fn [e]
+                                 [(:name e) (:sha1 e)])
+                               index-entries)]
+    (doseq [[file-name sha1] index-file-hashes]
+      (prn file-name (contains? commited-hashes sha1))
+      )
+    ))
+
 (comment
   (def project-root "/home/sto/tmp/agit")
   (init {:dir project-root})
@@ -405,6 +421,8 @@
       )
   (def cm (log project-root))
 
+  (status project-root)
+  
   (-> cm first commit-map->seq vd/seq->char-seq vd/char-seq->str)
   (def index (rm project-root "project.clj"))
   
