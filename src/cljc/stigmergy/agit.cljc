@@ -373,21 +373,32 @@
                     (-> commit-map :author :timestamp :sec)))
          reverse)))
 
+(defn get-files [project-root tree-sha1]
+  (let [tree-entries (parse-tree-object project-root tree-sha1)]
+    (for [tree-entry tree-entries
+          :let [mode (:mode tree-entry)
+                sha1 (:sha1 tree-entry)]]
+      (if (= mode "40000")
+        (get-files project-root sha1)
+        sha1))))
+
 (defn status [project-root]
   (let [commits (log project-root)
         commited-hashes (set (flatten (for [c commits
                                             :let [tree (:tree c)]]
-                                        (map :sha1
-                                             (parse-tree-object project-root tree)))))
+                                        (get-files project-root tree)
+                                        )))
         index (parse-git-index (str project-root "/.git/index"))
         index-entries (:entries index)
         index-file-hashes (map (fn [e]
                                  [(:name e) (:sha1 e)])
                                index-entries)]
     (doseq [[file-name sha1] index-file-hashes]
-      (prn file-name (contains? commited-hashes sha1))
-      )
-    ))
+      (cond
+        (not (contains? commited-hashes sha1)) (prn "new file " file-name  sha1)
+        :else nil
+        )
+    )))
 
 (comment
   (def project-root "/home/sto/tmp/agit")
@@ -415,9 +426,9 @@
            :timestamp {:sec 1572836765, :timezone -5}}})
 
   (-> (cat-file project-root "8cdc6741aa8d26b7db1cfa914012415386fb2366")
-      ;; vd/seq->char-seq
-      ;; vd/char-seq->str
-      commit-seq->map
+      vd/seq->char-seq
+      vd/char-seq->str
+      ;;commit-seq->map
       )
   (def cm (log project-root))
 
@@ -440,7 +451,13 @@
   (def gobj (ls project-root))
 
 
-  (parse-tree-object project-root "386cc71002189b57faf27dc5347f01288e9c3a5d")
+  (parse-tree-object project-root "d322d801815ce3b9e62b490908a245e95b3a192d")
+
+  (get-files project-root "4513da2db697201aec55b969da8e60a96702cb87")
+  (get-files project-root "8cdc6741aa8d26b7db1cfa914012415386fb2366")
+  (get-files project-root "4513da2db697201aec55b969da8e60a96702cb87")
+  
+  
   (-> (cat-file project-root "8101645cf456847bf0abc08224cebf9d3f19ab49")
       vd/seq->char-seq
       vd/char-seq->str
