@@ -379,28 +379,45 @@
           :let [{:keys [mode path sha1]} tree-entry]]
       (if (= mode "40000")
         (get-files project-root sha1)
-        sha1))))
+        [path sha1]))))
 
 (defn status [project-root]
-  (let [commits (log project-root)
-        commited-hashes (set (flatten (for [c commits
-                                            :let [tree (:tree c)]]
-                                        (get-files project-root tree)
-                                        )))
+  (let [commits (atom [])
+        _ (clojure.walk/postwalk (fn [v]
+                                   (when (vector? v)
+                                     (swap! commits conj v))
+                                   v)
+                                 (let [commits (log project-root)]
+                                   (for [c commits]
+                                     (get-files project-root (:tree c)))))
+
         index (parse-git-index (str project-root "/.git/index"))
         index-entries (:entries index)
         index-file-hashes (map (fn [e]
                                  [(:name e) (:sha1 e)])
-                               index-entries)]
-    (doseq [[file-name sha1] index-file-hashes]
-      (cond
-        (not (contains? commited-hashes sha1)) (prn "new file " file-name  sha1)
-        
-        :else nil
-        )
-    )))
+                               index-entries)
+        result (for [[file-name sha1 :as index-entry] index-file-hashes]
+                 (cond
+                   (some #(= sha1 (second %)) @commits) []
+                   (some (fn [c]
+                           (if (= 3 (count (set (concat c index-entry))))
+                             true
+                             false))
+                         @commits) [:modified file-name sha1]
+                   (not (some #(= % index-entry) @commits)) [:new file-name  sha1]
+                   :else []))
+        result (remove empty? result)
+        result (group-by first result)
+        result (let [new (:new result)
+                     new (mapv rest new)
+                     modified (:modified result)
+                     modified (mapv rest modified)]
+                 {:new new
+                  :modified modified})]
+    result))
 
 (comment
+  
   (def project-root "/home/sto/tmp/agit")
   (init {:dir project-root})
   
@@ -468,4 +485,17 @@
   
   (parse-tree-object project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
   (parse-tree-object project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62")
+
+
+  ;; index
+  (["bar.txt" "257cc5642cb1a054f08cc83f2d943e56fd3ebe99"]
+   ["parse_git_index.c" "8994936ce4de99ab2ba37acf373c5d808faf1a48"]
+   ["project.clj" "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"]
+   ["src/cljc/stigmergy/agit.cljc" "0ec2a42621de17a248bebbdab25c2b2a8781075f"]
+   ["test.txt" "9daeafb9864cf43055ae93beb0afd6c7d144bfa4"])
+
+  [["parse_git_index.c" "306a9ea8cb563ba61de6d4f6462f4f3b70e52ef0"]
+   ["project.clj" "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"]
+   ["agit.cljc" "0ec2a42621de17a248bebbdab25c2b2a8781075f"]
+   ["project.clj" "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"]]
   )
