@@ -403,15 +403,15 @@
                            (if (= 3 (count (set (concat c index-entry))))
                              true
                              false))
-                         @commits) [:modified file-name sha1]
-                   (not (some #(= % index-entry) @commits)) [:new file-name  sha1]
+                         @commits) [:modified file-name]
+                   (not (some #(= % index-entry) @commits)) [:new file-name]
                    :else []))
         result (remove empty? result)
         result (group-by first result)
         result (let [new (:new result)
-                     new (mapv rest new)
+                     new (mapv second new)
                      modified (:modified result)
-                     modified (mapv rest modified)]
+                     modified (mapv second modified)]
                  {:new new
                   :modified modified})]
     result))
