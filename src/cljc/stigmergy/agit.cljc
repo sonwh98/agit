@@ -376,8 +376,7 @@
 (defn get-files [project-root tree-sha1]
   (let [tree-entries (parse-tree-object project-root tree-sha1)]
     (for [tree-entry tree-entries
-          :let [mode (:mode tree-entry)
-                sha1 (:sha1 tree-entry)]]
+          :let [{:keys [mode path sha1]} tree-entry]]
       (if (= mode "40000")
         (get-files project-root sha1)
         sha1))))
@@ -396,6 +395,7 @@
     (doseq [[file-name sha1] index-file-hashes]
       (cond
         (not (contains? commited-hashes sha1)) (prn "new file " file-name  sha1)
+        
         :else nil
         )
     )))
