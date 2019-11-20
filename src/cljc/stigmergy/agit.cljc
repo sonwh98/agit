@@ -416,6 +416,25 @@
                   :modified modified})]
     result))
 
+(defn commit [project-root]
+  (let [status (status project-root)
+        head-commit (first (log project-root))
+        head-sha1 (:sha1 head-commit)
+        message "test msg"
+        timestamp (.. (java.util.Date.) getTime)
+        sec (quot  timestamp 1000)
+        author {:person "sto <son.c.to@gmail.com"
+                :timestamp {:sec sec :timezone -5}}
+        committer author]
+    {:parent head-sha1
+     :message message
+     :tree ""
+     :author author
+     :commiter committer
+     }
+    )
+  )
+
 (comment
   
   (def project-root "/home/sto/tmp/agit")
@@ -475,17 +494,21 @@
   (get-files project-root "4513da2db697201aec55b969da8e60a96702cb87")
   
   
-  (-> (cat-file project-root "8101645cf456847bf0abc08224cebf9d3f19ab49")
+  (-> (cat-file project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
       vd/seq->char-seq
       vd/char-seq->str
       )
+  (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
+
+  (parse-tree-object project-root "8cdc6741aa8d26b7db1cfa914012415386fb2366")
+  
   (cat-file-str project-root "841df0c72dd7022f01a85a2ceb96967118ff228a")
 
   (parse-tree-object project-root "d11d4425f2f5c3b2044e4e3d5ba312673d56a265")
   
   (parse-tree-object project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
   (parse-tree-object project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62")
-
+  (commit project-root)
 
   ;; index
   (["bar.txt" "257cc5642cb1a054f08cc83f2d943e56fd3ebe99"]
