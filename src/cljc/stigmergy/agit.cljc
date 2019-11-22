@@ -416,6 +416,12 @@
                   :modified modified})]
     result))
 
+(defn write-tree [project-root]
+  (let [index (parse-git-index (str project-root "/.git/index"))]
+
+    )
+  )
+
 (defn commit [project-root]
   (let [status (status project-root)
         head-commit (first (log project-root))
@@ -487,12 +493,44 @@
   (def gobj (ls project-root))
 
 
-  (parse-tree-object project-root "d322d801815ce3b9e62b490908a245e95b3a192d")
+  (parse-tree-object project-root "d322d801815ce3b9e62b490908a245e95b3a192d") ;;stigmergy
+  (parse-tree-object project-root "48813916c22491cfd7bb4901e447ca0a6c5c4ace") ;;agit.cljc
+  (parse-tree-object project-root "4513da2db697201aec55b969da8e60a96702cb87") ;;cljc
+  (parse-tree-object project-root "043e18345f16a8eab5dd43affd170273361f8f92") ;;src
 
+  (parse-tree-object project-root "898d0452d6ef35c0285432cd572943d1206f96b9") ;; stigmergy
+
+  (parse-tree-object project-root "05434bfa7415ad1067ddcc674e966fc607d7799c")
   (get-files project-root "4513da2db697201aec55b969da8e60a96702cb87")
   (get-files project-root "8cdc6741aa8d26b7db1cfa914012415386fb2366")
   (get-files project-root "4513da2db697201aec55b969da8e60a96702cb87")
   
+  (parse-tree-object project-root "ecc14f7afea9f2505d3c6cd3cf6b23cac24d0588") ;;src
+  (parse-tree-object project-root "eeec1327b15c7313c2a98a2743c56ec5858364d7") ;;bar.txt
+
+  (let [root-tree (parse-tree-object project-root "ec0068b9becf052c2d64babd27b934b376b9b6e2")
+        tree (flatten (map (fn [{:keys [mode path sha1]}]
+                             (let [sha1-binary (vd/hex->seq sha1)
+                                   mode-path (vd/str->seq (str mode " " path))]
+                               (concat mode-path [0] sha1-binary)))
+                           root-tree))]
+    (hash-object "tree" tree))
+
+  (parse-tree-object project-root "ec0068b9becf052c2d64babd27b934b376b9b6e2")
+  (map #(parse-tree-object project-root %)
+       ["d322d801815ce3b9e62b490908a245e95b3a192d"
+        "48813916c22491cfd7bb4901e447ca0a6c5c4ace"
+        "4513da2db697201aec55b969da8e60a96702cb87"
+        "043e18345f16a8eab5dd43affd170273361f8f92"])
+  
+  (-> (cat-file project-root "0ec2a42621de17a248bebbdab25c2b2a8781075f")
+      vd/seq->char-seq
+      vd/char-seq->str)
+
+    (-> (cat-file project-root "257cc5642cb1a054f08cc83f2d943e56fd3ebe99")
+      vd/seq->char-seq
+      vd/char-seq->str)
+    
   
   (-> (cat-file project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
       vd/seq->char-seq
