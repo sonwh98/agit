@@ -373,13 +373,15 @@
                     (-> commit-map :author :timestamp :sec)))
          reverse)))
 
+(defn dir? [tree-entry]
+  (= (:mode tree-entry) "40000"))
+
 (defn get-files [project-root tree-sha1]
   (let [tree-entries (parse-tree-object project-root tree-sha1)]
-    (for [tree-entry tree-entries
-          :let [{:keys [mode path sha1]} tree-entry]]
-      (if (= mode "40000")
-        (get-files project-root sha1)
-        [path sha1]))))
+    (for [tree-entry tree-entries]
+      (if (dir? tree-entry)
+        (get-files project-root (:sha1 tree-entry))
+        tree-entry))))
 
 (defn status [project-root]
   (let [commits (atom [])
@@ -396,7 +398,7 @@
         index-file-hashes (map (fn [e]
                                  [(:name e) (:sha1 e)])
                                index-entries)
-        result (for [[file-name sha1 :as index-entry] index-file-hashes]
+        result (for [{:keys [file-name sha1] :as index-entry} index-entries]
                  (cond
                    (some #(= sha1 (second %)) @commits) []
                    (some (fn [c]
@@ -406,14 +408,15 @@
                          @commits) [:modified file-name]
                    (not (some #(= % index-entry) @commits)) [:new file-name]
                    :else []))
-        result (remove empty? result)
-        result (group-by first result)
-        result (let [new (:new result)
-                     new (mapv second new)
-                     modified (:modified result)
-                     modified (mapv second modified)]
-                 {:new new
-                  :modified modified})]
+        ;; result (remove empty? result)
+        ;; result (group-by first result)
+        ;; result (let [new (:new result)
+        ;;              new (mapv second new)
+        ;;              modified (:modified result)
+        ;;              modified (mapv second modified)]
+        ;;          {:new new
+        ;;           :modified modified})
+        ]
     result))
 
 (defn write-tree [project-root]
@@ -474,6 +477,49 @@
       )
   (def cm (log project-root))
 
+  (get-files project-root "8f9e52c590bb65f7bf35b93429406f52080b0761")
+
+  (let [commit-files (atom [])
+        nested-files (let [commits (log project-root)]
+                       (for [c commits]
+                         (get-files project-root (:tree c))))]
+    
+    (clojure.walk/postwalk (fn [v]
+                             (when (and (map? v)
+                                        (not (some (fn [file]
+                                                     (= (:sha1 v)
+                                                        (:sha1 file)))
+                                                   @commit-files)))
+                               (swap! commit-files conj v))
+                             v)
+                           nested-files)
+    @commit-files)
+
+  (-> (cat-file project-root "257cc5642cb1a054f08cc83f2d943e56fd3ebe99")
+      vd/seq->char-seq
+      
+      )
+
+    (-> (cat-file project-root   "fe328ad07c3726de30bea7c0f4a6f576f9dfa477")
+      vd/seq->char-seq
+      
+      )
+    
+
+  
+  (({:mode "100644",
+     :path "bar.txt",
+     :sha1 "fe328ad07c3726de30bea7c0f4a6f576f9dfa477"}
+    {:mode "100644",
+     :path "number.txt",
+     :sha1 "9c59e24b8393179a5d712de4f990178df5734d99"}
+    {:mode "100644",
+     :path "parse_git_index.c",
+     :sha1 "8994936ce4de99ab2ba37acf373c5d808faf1a48"}
+    {:mode "100644",
+     :path "project.clj",
+     :sha1 "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"}))
+  
   (status project-root)
   
   (-> cm first commit-map->seq vd/seq->char-seq vd/char-seq->str)
