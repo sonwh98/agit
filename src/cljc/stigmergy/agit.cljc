@@ -468,114 +468,18 @@
                   "bar.txt"
                   ))
 
-  (def c {:message "add bar.txt",
-          :tree "8cdc6741aa8d26b7db1cfa914012415386fb2366",
-          :parent "a53f49fbc92a9f2168d1f6e82829f1c4bda159e0",
-          :author
-          {:person "sto <son.c.to@gmail.com>",
-           :timestamp {:sec 1572836765, :timezone -5}},
-          :committer
-          {:person "sto <son.c.to@gmail.com>",
-           :timestamp {:sec 1572836765, :timezone -5}}})
-
-  (-> (cat-file project-root "8cdc6741aa8d26b7db1cfa914012415386fb2366")
-      vd/seq->char-seq
-      vd/char-seq->str
-      ;;commit-seq->map
-      )
   (def cm (log project-root))
 
   (write-tree project-root)
-  (get-files project-root "cebd0ad2ac6e24b788bff7821b62882926088fbd" [])
-
-  (let [commit-files (atom [])
-        nested-files (let [commits (log project-root)]
-                       (for [c commits]
-                         (get-files project-root (:tree c) [])))]
-    
-    (clojure.walk/postwalk (fn [v]
-                             (when (and (map? v)
-                                        (not (some (fn [file]
-                                                     (= (:sha1 v)
-                                                        (:sha1 file)))
-                                                   @commit-files)))
-                               (swap! commit-files conj v))
-                             v)
-                           nested-files)
-    @commit-files)
-  
-  (-> (cat-file project-root "257cc5642cb1a054f08cc83f2d943e56fd3ebe99")
-      vd/seq->char-seq
-      
-      )
-
-    (-> (cat-file project-root   "fe328ad07c3726de30bea7c0f4a6f576f9dfa477")
-      vd/seq->char-seq
-      
-      )
-
   
   (status project-root)
-  [{:mode "100644", :path "parse_git_index.c", :sha1 "8994936ce4de99ab2ba37acf373c5d808faf1a48", :parents []}
-   {:mode "100644", :path "agit.cljc", :sha1 "5664e303b5dc2e9ef8e14a0845d9486ec1920afd", :parents ["src" "cljc" "stigmergy"]}
-   {:mode "100644", :path "io.cljc", :sha1 "ad4a7bd0766d833d5c29e649d6c806844254df7c", :parents ["src" "cljc" "stigmergy"]}
-   {:mode "100644", :path "agit.cljc", :sha1 "0ec2a42621de17a248bebbdab25c2b2a8781075f", :parents ["src" "cljc" "stigmergy"]}
-   ]
 
-  (let [index (parse-git-index (str project-root "/.git/index"))
-        index-entries (:entries index)
-        commit-files (atom [{:mode "100644", :path "agit.cljc",
-                             :sha1 "0ec2a42621de17a248bebbdab25c2b2a8781075f",
-                             :parents ["src" "cljc" "stigmergy"]}
-                            {:mode "100644", :path "io.cljc",
-                             :sha1 "ad4a7bd0766d833d5c29e649d6c806844254df7c",
-                             :parents ["src" "cljc" "stigmergy"]}])
-        result (for [{:keys [name sha1] :as index-entry} index-entries]
-                 (cond
-                   (some #(= sha1 (:sha1 %)) @commit-files) [:unknown name]
-                   (some (fn [c]
-                           (= (:path c)
-                              name))
-                         @commit-files) [:modified index-entry]
-                   (not (some #(= % index-entry) @commit-files)) [:new index-entry]
-                   :else [name]))
-        
-        ]
-    result
-    )
-  
-  
-  (-> cm first commit-map->seq vd/seq->char-seq vd/char-seq->str)
-  (def index (rm project-root "project.clj"))
-  
-  (write-blob project-root "test content\n")
-  
-  (-> (str project-root "/.git/index")
-      io/suck)
 
   (-> (cat-file project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
       vd/seq->char-seq
       vd/char-seq->str)
-  (->  project-root "8776260b4af43343308fd020dcac15eb8d8becbd"
-       commit-seq->map)
 
   (def gobj (ls project-root))
-
-
-  (parse-tree-object project-root "d322d801815ce3b9e62b490908a245e95b3a192d") ;;stigmergy
-  (parse-tree-object project-root "48813916c22491cfd7bb4901e447ca0a6c5c4ace") ;;agit.cljc
-  (parse-tree-object project-root "4513da2db697201aec55b969da8e60a96702cb87") ;;cljc
-  (parse-tree-object project-root "043e18345f16a8eab5dd43affd170273361f8f92") ;;src
-
-  (parse-tree-object project-root "898d0452d6ef35c0285432cd572943d1206f96b9") ;; stigmergy
-
-  (parse-tree-object project-root "05434bfa7415ad1067ddcc674e966fc607d7799c")
-  (get-files project-root "4513da2db697201aec55b969da8e60a96702cb87")
-  (get-files project-root "8cdc6741aa8d26b7db1cfa914012415386fb2366")
-  (get-files project-root "4513da2db697201aec55b969da8e60a96702cb87")
-  
-  (parse-tree-object project-root "ecc14f7afea9f2505d3c6cd3cf6b23cac24d0588") ;;src
-  (parse-tree-object project-root "eeec1327b15c7313c2a98a2743c56ec5858364d7") ;;bar.txt
 
   (let [root-tree (parse-tree-object project-root "73eb7197d44f99c0fe3902225e3a2bfa6522ce30")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
@@ -586,11 +490,6 @@
     (hash-object "tree" tree))
 
   (parse-tree-object project-root "ec0068b9becf052c2d64babd27b934b376b9b6e2")
-  (map #(parse-tree-object project-root %)
-       ["d322d801815ce3b9e62b490908a245e95b3a192d"
-        "48813916c22491cfd7bb4901e447ca0a6c5c4ace"
-        "4513da2db697201aec55b969da8e60a96702cb87"
-        "043e18345f16a8eab5dd43affd170273361f8f92"])
   
   (-> (cat-file project-root "0ec2a42621de17a248bebbdab25c2b2a8781075f")
       vd/seq->char-seq
@@ -617,15 +516,5 @@
   (parse-tree-object project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62")
   (commit project-root)
 
-  ;; index
-  (["bar.txt" "257cc5642cb1a054f08cc83f2d943e56fd3ebe99"]
-   ["parse_git_index.c" "8994936ce4de99ab2ba37acf373c5d808faf1a48"]
-   ["project.clj" "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"]
-   ["src/cljc/stigmergy/agit.cljc" "0ec2a42621de17a248bebbdab25c2b2a8781075f"]
-   ["test.txt" "9daeafb9864cf43055ae93beb0afd6c7d144bfa4"])
 
-  [["parse_git_index.c" "306a9ea8cb563ba61de6d4f6462f4f3b70e52ef0"]
-   ["project.clj" "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"]
-   ["agit.cljc" "0ec2a42621de17a248bebbdab25c2b2a8781075f"]
-   ["project.clj" "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"]]
   )
