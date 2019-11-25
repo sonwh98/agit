@@ -414,21 +414,26 @@
         result (group-by first result)
         result {:modified (map second (:modified result))
                 :new (map second (:new result))
-                :no-change (map second (:no-change result))}]
+                ;;:no-change (map second (:no-change result))
+                }]
     result))
 
+(defn mk-tree [path]
+
+  )
+
 (defn write-tree [project-root]
-  (let [index (parse-git-index (str project-root "/.git/index"))
+  (let [;;index (parse-git-index (str project-root "/.git/index"))
         status (status project-root)
-        new-tree-entries (map (fn [e]
-                                (let [e (clojure.set/rename-keys e {:name :path})]
-                                  (select-keys e [:mode :path :sha1])))
-                              (:new status))
-        new-modified-tree-entries (map (fn [e]
-                                         (let [e (clojure.set/rename-keys e {:name :path})]
-                                           (select-keys e [:mode :path :sha1])))
-                                       (:modified status))
-        tree-entries (sort-by :path (concat new-tree-entries new-modified-tree-entries))]
+        index-entries (sort-by :name (concat (:new status) (:modified status)))
+        tree-entries (map (fn [e]
+                            (let [path (clojure.string/split (:name e) #"/")
+                                  e (clojure.set/rename-keys e {:name :path})
+                                  e (select-keys e [:mode :path :sha1])
+                                  e (assoc e :path path)]
+                              e))
+                          index-entries)
+        ]
     tree-entries
     )
   )
@@ -481,7 +486,7 @@
 
   (def gobj (ls project-root))
 
-  (let [root-tree (parse-tree-object project-root "73eb7197d44f99c0fe3902225e3a2bfa6522ce30")
+  (let [root-tree (parse-tree-object project-root "4d7aded845f935ba46412b0107895bf851fd33d8")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
                              (let [sha1-binary (vd/hex->seq sha1)
                                    mode-path (vd/str->seq (str mode " " path))]
@@ -489,7 +494,7 @@
                            root-tree))]
     (hash-object "tree" tree))
 
-  (parse-tree-object project-root "ec0068b9becf052c2d64babd27b934b376b9b6e2")
+  (parse-tree-object project-root "4d7aded845f935ba46412b0107895bf851fd33d8")
   
   (-> (cat-file project-root "0ec2a42621de17a248bebbdab25c2b2a8781075f")
       vd/seq->char-seq
