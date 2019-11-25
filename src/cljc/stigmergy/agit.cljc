@@ -376,18 +376,18 @@
 (defn dir? [tree-entry]
   (= (:mode tree-entry) "40000"))
 
-(defn get-files [project-root tree-sha1]
+(defn get-files [project-root tree-sha1 parents]
   (let [tree-entries (parse-tree-object project-root tree-sha1)]
     (for [tree-entry tree-entries]
       (if (dir? tree-entry)
-        (get-files project-root (:sha1 tree-entry))
-        tree-entry))))
+        (get-files project-root (:sha1 tree-entry) (conj parents (:path tree-entry)))
+        (assoc-in tree-entry [:parents] parents)))))
 
 (defn status [project-root]
   (let [commit-files (atom [])
         nested-files (let [commits (log project-root)]
                        (for [c commits]
-                         (get-files project-root (:tree c))))
+                         (get-files project-root (:tree c) [])))
         _ (clojure.walk/postwalk (fn [v]
                                    (when (and (map? v)
                                               (not (some (fn [file]
@@ -399,24 +399,37 @@
                                  nested-files)
         index (parse-git-index (str project-root "/.git/index"))
         index-entries (:entries index)
-
         result (for [{:keys [name sha1] :as index-entry} index-entries]
                  (cond
-                   (some #(= sha1 (:sha1 %)) @commit-files) []
+                   (some #(= sha1 (:sha1 %)) @commit-files) [:no-change index-entry]
                    (some (fn [c]
-                           (= (:path c)
-                              name))
+                           (let [name-paths (clojure.string/split name #"/")
+                                 file-name (last name-paths)
+                                 parents (drop-last name-paths)
+                                 path (:path c)]
+                             (= file-name path)))
                          @commit-files) [:modified index-entry]
                    (not (some #(= % index-entry) @commit-files)) [:new index-entry]
-                   :else []))
+                   :else [:unknown index-entry]))
         result (group-by first result)
         result {:modified (map second (:modified result))
-                :new (map second (:new result))}]
+                :new (map second (:new result))
+                :no-change (map second (:no-change result))}]
     result))
 
 (defn write-tree [project-root]
-  (let [index (parse-git-index (str project-root "/.git/index"))]
-
+  (let [index (parse-git-index (str project-root "/.git/index"))
+        status (status project-root)
+        new-tree-entries (map (fn [e]
+                                (let [e (clojure.set/rename-keys e {:name :path})]
+                                  (select-keys e [:mode :path :sha1])))
+                              (:new status))
+        new-modified-tree-entries (map (fn [e]
+                                         (let [e (clojure.set/rename-keys e {:name :path})]
+                                           (select-keys e [:mode :path :sha1])))
+                                       (:modified status))
+        tree-entries (sort-by :path (concat new-tree-entries new-modified-tree-entries))]
+    tree-entries
     )
   )
 
@@ -472,12 +485,13 @@
       )
   (def cm (log project-root))
 
-  (get-files project-root "8f9e52c590bb65f7bf35b93429406f52080b0761")
+  (write-tree project-root)
+  (get-files project-root "cebd0ad2ac6e24b788bff7821b62882926088fbd" [])
 
   (let [commit-files (atom [])
         nested-files (let [commits (log project-root)]
                        (for [c commits]
-                         (get-files project-root (:tree c))))]
+                         (get-files project-root (:tree c) [])))]
     
     (clojure.walk/postwalk (fn [v]
                              (when (and (map? v)
@@ -489,7 +503,7 @@
                              v)
                            nested-files)
     @commit-files)
-
+  
   (-> (cat-file project-root "257cc5642cb1a054f08cc83f2d943e56fd3ebe99")
       vd/seq->char-seq
       
@@ -502,6 +516,34 @@
 
   
   (status project-root)
+  [{:mode "100644", :path "parse_git_index.c", :sha1 "8994936ce4de99ab2ba37acf373c5d808faf1a48", :parents []}
+   {:mode "100644", :path "agit.cljc", :sha1 "5664e303b5dc2e9ef8e14a0845d9486ec1920afd", :parents ["src" "cljc" "stigmergy"]}
+   {:mode "100644", :path "io.cljc", :sha1 "ad4a7bd0766d833d5c29e649d6c806844254df7c", :parents ["src" "cljc" "stigmergy"]}
+   {:mode "100644", :path "agit.cljc", :sha1 "0ec2a42621de17a248bebbdab25c2b2a8781075f", :parents ["src" "cljc" "stigmergy"]}
+   ]
+
+  (let [index (parse-git-index (str project-root "/.git/index"))
+        index-entries (:entries index)
+        commit-files (atom [{:mode "100644", :path "agit.cljc",
+                             :sha1 "0ec2a42621de17a248bebbdab25c2b2a8781075f",
+                             :parents ["src" "cljc" "stigmergy"]}
+                            {:mode "100644", :path "io.cljc",
+                             :sha1 "ad4a7bd0766d833d5c29e649d6c806844254df7c",
+                             :parents ["src" "cljc" "stigmergy"]}])
+        result (for [{:keys [name sha1] :as index-entry} index-entries]
+                 (cond
+                   (some #(= sha1 (:sha1 %)) @commit-files) [:unknown name]
+                   (some (fn [c]
+                           (= (:path c)
+                              name))
+                         @commit-files) [:modified index-entry]
+                   (not (some #(= % index-entry) @commit-files)) [:new index-entry]
+                   :else [name]))
+        
+        ]
+    result
+    )
+  
   
   (-> cm first commit-map->seq vd/seq->char-seq vd/char-seq->str)
   (def index (rm project-root "project.clj"))
@@ -535,7 +577,7 @@
   (parse-tree-object project-root "ecc14f7afea9f2505d3c6cd3cf6b23cac24d0588") ;;src
   (parse-tree-object project-root "eeec1327b15c7313c2a98a2743c56ec5858364d7") ;;bar.txt
 
-  (let [root-tree (parse-tree-object project-root "ec0068b9becf052c2d64babd27b934b376b9b6e2")
+  (let [root-tree (parse-tree-object project-root "73eb7197d44f99c0fe3902225e3a2bfa6522ce30")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
                              (let [sha1-binary (vd/hex->seq sha1)
                                    mode-path (vd/str->seq (str mode " " path))]
