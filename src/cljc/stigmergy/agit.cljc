@@ -1,7 +1,8 @@
 (ns stigmergy.agit
   (:require [stigmergy.io :as io]
-            [stigmergy.voodoo :as vd]
-            [stigmergy.tily :as util]))
+            [stigmergy.node :as n]
+            [stigmergy.tily :as util]
+            [stigmergy.voodoo :as vd]))
 
 (defn init
   ([{:keys [dir]}]
@@ -414,27 +415,49 @@
         result (group-by first result)
         result {:modified (map second (:modified result))
                 :new (map second (:new result))
-                ;;:no-change (map second (:no-change result))
+                :no-change (map second (:no-change result))
                 }]
     result))
 
-(defn mk-tree [path]
+(defn mk-tree [parent path]
 
   )
+
+(defn index-entry->tree-entry [index-entry]
+  (select-keys index-entry [:mode :name :sha1]))
+
+(defn mkdir [nodes]
+  (reduce n/join-node nodes))
 
 (defn write-tree [project-root]
   (let [;;index (parse-git-index (str project-root "/.git/index"))
         status (status project-root)
-        index-entries (sort-by :name (concat (:new status) (:modified status)))
-        tree-entries (map (fn [e]
-                            (let [path (clojure.string/split (:name e) #"/")
-                                  e (clojure.set/rename-keys e {:name :path})
-                                  e (select-keys e [:mode :path :sha1])
-                                  e (assoc e :path path)]
-                              e))
-                          index-entries)
+        new-entries (map index-entry->tree-entry  (:new status))
+        modified-entries (map index-entry->tree-entry (:modified status))
+        
+        unchanged-entries (map index-entry->tree-entry (:no-change status))
+        commits (log project-root)
+        head-commit (first commits)
+        head-tree (:tree head-commit)
+        ;; new-entries (map (fn [e]
+        ;;                     (let [path (clojure.string/split (:name e) #"/")
+        ;;                           e (clojure.set/rename-keys e {:name :path})
+        ;;                           e (select-keys e [:mode :path :sha1])
+        ;;                           e (assoc e :path path)]
+        ;;                       e))
+        ;;                   new-entries)
+        files (map :name (concat new-entries modified-entries unchanged-entries))
+        _ (prn "files=" files)
+        files (map (fn [f]
+                     (-> f
+                         n/->path
+                         n/->node
+                         )) files)
         ]
-    tree-entries
+    ;;head-tree
+    ;;new-entries
+    ;;unchanged-entries
+    (mkdir files)
     )
   )
 
@@ -477,16 +500,21 @@
 
   (write-tree project-root)
   
-  (status project-root)
-
-
+  (def st (status project-root))
+  (map n/->path ["/src/foo.bar"])
+  (parse-tree-object project-root "a050d9fe1adb2166ffa57b9f4ac14f257b985ad8")
+  (parse-tree-object project-root "029811f75599fae2377fb1ae3cf5894fb4cd4e71")
+  (parse-tree-object project-root "5540efb0644415f72792a1bc2116bce94cb6f23f")
+  (parse-tree-object project-root "6893781a49bc8abbeeee1d71ce18f8356a8fd37e")
+  
+  
   (-> (cat-file project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
       vd/seq->char-seq
       vd/char-seq->str)
 
   (def gobj (ls project-root))
 
-  (let [root-tree (parse-tree-object project-root "4d7aded845f935ba46412b0107895bf851fd33d8")
+  (let [root-tree (parse-tree-object project-root "a050d9fe1adb2166ffa57b9f4ac14f257b985ad8")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
                              (let [sha1-binary (vd/hex->seq sha1)
                                    mode-path (vd/str->seq (str mode " " path))]
@@ -494,32 +522,37 @@
                            root-tree))]
     (hash-object "tree" tree))
 
-  (parse-tree-object project-root "4d7aded845f935ba46412b0107895bf851fd33d8")
-  
-  (-> (cat-file project-root "0ec2a42621de17a248bebbdab25c2b2a8781075f")
+
+  (-> (cat-file project-root "cae3d405d9d49ffe5dbbf80ebb3162e72b2e26d7")
       vd/seq->char-seq
       vd/char-seq->str)
-
-    (-> (cat-file project-root "257cc5642cb1a054f08cc83f2d943e56fd3ebe99")
-      vd/seq->char-seq
-      vd/char-seq->str)
-    
   
-  (-> (cat-file project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
-      vd/seq->char-seq
-      vd/char-seq->str
-      )
-  (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
+  {:mode "4000"
+   :path "src"
+   :sha1 ""}
 
-  (parse-tree-object project-root "8cdc6741aa8d26b7db1cfa914012415386fb2366")
+  (let [f1 (concat (vd/str->seq (str "100644" " " "baz.txt"))
+                   [0]
+                   (vd/hex->seq "76018072e09c5d31c8c6e3113b8aa0fe625195ca"))
+        f1-2 (concat (vd/str->seq (str "100644" " " "foo.txt"))
+                     [0]
+                     (vd/hex->seq "448d72f5402480b2edb332446aafccfd579eb94d"))
+        f2 (concat (vd/str->seq (str "100644" " " "hi.txt"))
+                   [0]
+                   (vd/hex->seq "45b983be36b73c0788dc9cbcb76cbb80fc7bb057"))
+        f1+f2 (concat f1 f1-2 f2)]
+    (hash-object "tree" f1+f2)
+    )
+
+  {:mode "4000"
+   :path "src"
+   :sha1 "d4f98dc4289961635480667648c50746290d16fa"}
   
-  (cat-file-str project-root "841df0c72dd7022f01a85a2ceb96967118ff228a")
-
-  (parse-tree-object project-root "d11d4425f2f5c3b2044e4e3d5ba312673d56a265")
+  ({:mode "100644",
+    :path "baz.txt",
+    :sha1 "76018072e09c5d31c8c6e3113b8aa0fe625195ca"}
+   {:mode "100644",
+    :path "hi.txt",
+    :sha1 "45b983be36b73c0788dc9cbcb76cbb80fc7bb057"})
   
-  (parse-tree-object project-root "55e3e7f64afee31012c8c00c56cdd97d95b5e31c")
-  (parse-tree-object project-root "618855e49e7bf8dbdbb2b1275d37399db2a7ed62")
-  (commit project-root)
-
-
   )
