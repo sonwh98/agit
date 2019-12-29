@@ -439,15 +439,15 @@
         commits (log project-root)
         head-commit (first commits)
         head-tree (:tree head-commit)
-        ;; new-entries (map (fn [e]
-        ;;                     (let [path (clojure.string/split (:name e) #"/")
-        ;;                           e (clojure.set/rename-keys e {:name :path})
-        ;;                           e (select-keys e [:mode :path :sha1])
-        ;;                           e (assoc e :path path)]
-        ;;                       e))
-        ;;                   new-entries)
+        new-entries (map (fn [e]
+                           (let [path (first (clojure.string/split (:name e) #"/"))
+                                 e (clojure.set/rename-keys e {:name :path})
+                                 e (select-keys e [:mode :path :sha1])
+                                 e (assoc e :path path)]
+                             e))
+                          new-entries)
         files (map :name (concat new-entries modified-entries unchanged-entries))
-        _ (prn "files=" files)
+        _ (prn "new-entries=" new-entries)
         files (map (fn [f]
                      (-> f
                          n/->path
@@ -455,7 +455,11 @@
                          )) files)
         ]
     ;;head-tree
-    
+    (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
+                                        (let [mode-path (vd/str->seq (str mode " " path))
+                                              sha1-binary (vd/hex->seq sha1)]
+                                          (concat mode-path [0] sha1-binary)))
+                                      new-entries)))
     ;;unchanged-entries
     ;;(mkdir files)
     )
