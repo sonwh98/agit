@@ -506,8 +506,11 @@
                                         (let [mode-path (vd/str->seq (str mode " " path))
                                               sha1-binary (vd/hex->seq sha1)]
                                           (concat mode-path [0] sha1-binary)))
-                                    [{:mode "100644",
-                                      :path "project.clj",
+                                    [{:mode "100644"
+                                      :path "parse_git_index.c"
+                                      :sha1 "306a9ea8cb563ba61de6d4f6462f4f3b70e52ef0"}
+                                     {:mode "100644"
+                                      :path "project.clj"
                                       :sha1 "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"}]
                                     )))
   
