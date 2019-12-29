@@ -455,9 +455,9 @@
                          )) files)
         ]
     ;;head-tree
-    ;;new-entries
+    
     ;;unchanged-entries
-    (mkdir files)
+    ;;(mkdir files)
     )
   )
 
@@ -498,15 +498,18 @@
 
   (def cm (log project-root))
 
-  (write-tree project-root)
-  
   (def st (status project-root))
   (map n/->path ["/src/foo.bar"])
-  (parse-tree-object project-root "a050d9fe1adb2166ffa57b9f4ac14f257b985ad8")
-  (parse-tree-object project-root "029811f75599fae2377fb1ae3cf5894fb4cd4e71")
-  (parse-tree-object project-root "5540efb0644415f72792a1bc2116bce94cb6f23f")
-  (parse-tree-object project-root "6893781a49bc8abbeeee1d71ce18f8356a8fd37e")
-  
+  (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
+
+  (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
+                                        (let [mode-path (vd/str->seq (str mode " " path))
+                                              sha1-binary (vd/hex->seq sha1)]
+                                          (concat mode-path [0] sha1-binary)))
+                                    [{:mode "100644",
+                                      :path "project.clj",
+                                      :sha1 "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"}]
+                                    )))
   
   (-> (cat-file project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
       vd/seq->char-seq
@@ -514,23 +517,23 @@
 
   (def gobj (ls project-root))
 
-  (let [root-tree (parse-tree-object project-root "a050d9fe1adb2166ffa57b9f4ac14f257b985ad8")
+  (write-tree project-root)
+  (let [root-tree (parse-tree-object project-root "b84b2a329705f3fcaa99e38557ed4e1e18dd179e")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
-                             (let [sha1-binary (vd/hex->seq sha1)
-                                   mode-path (vd/str->seq (str mode " " path))]
+                             (let [mode-path (vd/str->seq (str mode " " path))
+                                   sha1-binary (vd/hex->seq sha1)]
                                (concat mode-path [0] sha1-binary)))
                            root-tree))]
-    (hash-object "tree" tree))
-
+    #_(hash-object "tree" tree)
+    tree
+    )
 
   (-> (cat-file project-root "cae3d405d9d49ffe5dbbf80ebb3162e72b2e26d7")
       vd/seq->char-seq
       vd/char-seq->str)
   
-  {:mode "4000"
-   :path "src"
-   :sha1 ""}
-
+  (commit project-root)
+  
   (let [f1 (concat (vd/str->seq (str "100644" " " "baz.txt"))
                    [0]
                    (vd/hex->seq "76018072e09c5d31c8c6e3113b8aa0fe625195ca"))
@@ -544,15 +547,5 @@
     (hash-object "tree" f1+f2)
     )
 
-  {:mode "4000"
-   :path "src"
-   :sha1 "d4f98dc4289961635480667648c50746290d16fa"}
-  
-  ({:mode "100644",
-    :path "baz.txt",
-    :sha1 "76018072e09c5d31c8c6e3113b8aa0fe625195ca"}
-   {:mode "100644",
-    :path "hi.txt",
-    :sha1 "45b983be36b73c0788dc9cbcb76cbb80fc7bb057"})
   
   )
