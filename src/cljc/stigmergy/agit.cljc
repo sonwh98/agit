@@ -326,7 +326,7 @@
     (into {:message (-> commit last vd/char-seq->str)}
           kv-pairs)))
 
-(defn commit-map->seq [cm]
+#_(defn commit-map->seq [cm]
   (let [ks [:tree :parent :author :committer :message]
         commit-lines (for [k ks]
                        (cond
@@ -447,44 +447,69 @@
                              e))
                           new-entries)
         files (map :name (concat new-entries modified-entries unchanged-entries))
-        _ (prn "new-entries=" new-entries)
+        ;;_ (prn "new-entries=" new-entries)
         files (map (fn [f]
                      (-> f
                          n/->path
                          n/->node
                          )) files)
+        tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
+                                 (let [mode-path (vd/str->seq (str mode " " path))
+                                       sha1-binary (vd/hex->seq sha1)]
+                                   (concat mode-path [0] sha1-binary)))
+                               new-entries))
+        sha1-hex-str (hash-object "tree" tree-seq)
+        two (vd/seq->str (take 2 sha1-hex-str))
+        other (vd/seq->str (drop 2 sha1-hex-str))
+        file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
+        tree (->> tree-seq (wrap "tree") io/compress)
         ]
+    (io/squirt file-path tree)
+    sha1-hex-str
     ;;head-tree
-    (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
-                                        (let [mode-path (vd/str->seq (str mode " " path))
-                                              sha1-binary (vd/hex->seq sha1)]
-                                          (concat mode-path [0] sha1-binary)))
-                                      new-entries)))
+    
     ;;unchanged-entries
     ;;(mkdir files)
     )
   )
 
-(defn commit [project-root]
+(defn commit-map [project-root]
   (let [status (status project-root)
         head-commit (first (log project-root))
         head-sha1 (:sha1 head-commit)
-        message "test msg"
+        message "1"
         timestamp (.. (java.util.Date.) getTime)
         sec (quot  timestamp 1000)
         author {:person "sto <son.c.to@gmail.com"
                 :timestamp {:sec sec :timezone -5}}
-        committer author]
-    {:parent head-sha1
-     :message message
-     :tree ""
-     :author author
-     :commiter committer
-     }
-    )
-  )
+        committer author
+        commit-map {:message message
+                    :tree (:sha1 (write-tree project-root))
+                    :author author
+                    :commiter committer}
+        commit-map (if head-sha1
+                     (assoc commit-map :parent head-sha1)
+                     commit-map)]
+    commit-map))
+
+(defn commit [project-root]
+  (write-tree project-root)
+  (let [commit-map (commit-map project-root)
+        commit-seq (commit-map->seq commit-map)
+        ;;commit-sha1 "664b942f06cf7c53de0bdca79586ed043d0a1bb5" ;;(str (hash-object "commit" commit-seq) "\n")
+        sha1-hex-str (hash-object "commit" commit-seq)
+        two (vd/seq->str (take 2 sha1-hex-str))
+        other (vd/seq->str (drop 2 sha1-hex-str))
+        file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
+        commit (->> commit-seq (wrap "commit") io/compress)
+        master-ref-path (str project-root "/.git/refs/heads/master")]
+    (prn "commiting " file-path)
+    (io/squirt file-path commit)
+    (spit master-ref-path sha1-hex-str)
+    sha1-hex-str))
 
 (comment
+
   
   (def project-root "/home/sto/tmp/agit")
   (init {:dir project-root})
@@ -504,7 +529,7 @@
 
   (def st (status project-root))
   (map n/->path ["/src/foo.bar"])
-  (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
+  (parse-tree-object project-root "f45ddc24e41ed7b5086659b811b9694215b14506")
 
   (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
                                         (let [mode-path (vd/str->seq (str mode " " path))
@@ -518,12 +543,14 @@
                                       :sha1 "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"}]
                                     )))
   
-  (-> (cat-file project-root "781ead446c9c0f4d789b78278e43936fba70c4a9")
-      vd/seq->char-seq
-      vd/char-seq->str)
+  (-> (cat-file project-root "f45ddc24e41ed7b5086659b811b9694215b14506")
+      ;;vd/seq->char-seq
+      ;;vd/char-seq->str
+      )
 
   (def gobj (ls project-root))
 
+  
   (write-tree project-root)
   (let [root-tree (parse-tree-object project-root "b84b2a329705f3fcaa99e38557ed4e1e18dd179e")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
@@ -538,7 +565,8 @@
   (-> (cat-file project-root "cae3d405d9d49ffe5dbbf80ebb3162e72b2e26d7")
       vd/seq->char-seq
       vd/char-seq->str)
-  
+
+  (commit-map project-root)
   (commit project-root)
   
   (let [f1 (concat (vd/str->seq (str "100644" " " "baz.txt"))
@@ -554,5 +582,11 @@
     (hash-object "tree" f1+f2)
     )
 
-  
+  {:message "1"
+   :tree "f45ddc24e41ed7b5086659b811b9694215b14506"
+   :author {:person "sto <son.c.to@gmail.com>"
+            :timestamp {:sec 1577675372 :timezone -5}}
+   :committer {:person "sto <son.c.to@gmail.com>"
+                 :timestamp {:sec 1577675372 :timezone -5}}
+   :sha1 "e4a9722e7f8254f7c79a06d043ab7b2bc45c8434"}
   )
