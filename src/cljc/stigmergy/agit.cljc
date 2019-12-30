@@ -326,6 +326,19 @@
     (into {:message (-> commit last vd/char-seq->str)}
           kv-pairs)))
 
+(defn commit-map->seq [cm]
+  (let [ks [:tree :parent :author :committer :message]
+        commit-lines (for [k ks]
+                       (cond
+                         (or  (= k :author)
+                              (= k :committer)) (let [{:keys [person timestamp]} (k cm)
+                                                      {:keys [sec timezone]} timestamp]
+                                                  (str (name k) " " person " " sec " " timezone))
+                         (= k :message) (str "\n" (k cm))
+                         :else (str (name k) " " (k cm))))
+        commit-lines-as-str (clojure.string/join "\n" commit-lines)]
+    (vd/str->seq commit-lines-as-str)))
+
 (defn parse-blob-object [project-root sha1]
   (let [blob-content (unwrap (cat-file project-root sha1))]
     blob-content
@@ -471,7 +484,7 @@
                 :timestamp {:sec sec :timezone -5}}
         committer author
         commit-map {:message message
-                    :tree (:sha1 (write-tree project-root))
+                    :tree (write-tree project-root)
                     :author author
                     :commiter committer}
         commit-map (if head-sha1
@@ -480,7 +493,7 @@
     commit-map))
 
 (defn commit [project-root]
-  (write-tree project-root)
+  ;;(write-tree project-root)
   (let [commit-map (commit-map project-root)
         commit-seq (commit-map->seq commit-map)
         ;;commit-sha1 "664b942f06cf7c53de0bdca79586ed043d0a1bb5" ;;(str (hash-object "commit" commit-seq) "\n")
@@ -497,7 +510,6 @@
 
 (comment
 
-  
   (def project-root "/home/sto/tmp/agit")
   (init {:dir project-root})
   
@@ -513,7 +525,8 @@
                   ))
 
   (def cm (log project-root))
-
+  (def cm (commit-map project-root))
+  
   (def st (status project-root))
   (map n/->path ["/src/foo.bar"])
   (parse-tree-object project-root "f45ddc24e41ed7b5086659b811b9694215b14506")
@@ -530,9 +543,9 @@
                                       :sha1 "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"}]
                                     )))
   
-  (-> (cat-file project-root "f45ddc24e41ed7b5086659b811b9694215b14506")
-      ;;vd/seq->char-seq
-      ;;vd/char-seq->str
+  (-> (cat-file project-root "056bbe6c4ce04118e0e8e99135dfa8b92cac5e16")
+      vd/seq->char-seq
+      vd/char-seq->str
       )
 
   (def gobj (ls project-root))
