@@ -505,7 +505,7 @@
         master-ref-path (str project-root "/.git/refs/heads/master")]
     (prn "commiting " file-path)
     (io/squirt file-path commit)
-    (spit master-ref-path sha1-hex-str)
+    (spit master-ref-path (str sha1-hex-str "\n"))
     sha1-hex-str))
 
 (comment
@@ -562,10 +562,11 @@
     tree
     )
 
-  (-> (cat-file project-root "cae3d405d9d49ffe5dbbf80ebb3162e72b2e26d7")
+  (-> (cat-file project-root "633e7b552bb254ca72ded3fc493c441bf9b8a8e4")
       vd/seq->char-seq
       vd/char-seq->str)
-
+  
+  (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
   (commit-map project-root)
   (commit project-root)
   
