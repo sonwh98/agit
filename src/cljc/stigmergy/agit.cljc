@@ -326,7 +326,7 @@
     (into {:message (-> commit last vd/char-seq->str)}
           kv-pairs)))
 
-(defn commit-map->seq [cm]
+#_(defn commit-map->seq [cm]
   (let [ks [:tree :parent :author :committer :message]
         commit-lines (for [k ks]
                        (cond
@@ -338,6 +338,21 @@
                          :else (str (name k) " " (k cm))))
         commit-lines-as-str (clojure.string/join "\n" commit-lines)]
     (vd/str->seq commit-lines-as-str)))
+
+(defn commit-map->seq [cm]
+  (let [ks [:tree :parent :author :committer :message]
+        commit-lines (for [k ks
+                           :let [v (k cm)]
+                           :when (-> v nil? not)]
+                       (cond
+                         (or  (= k :author)
+                              (= k :committer)) (let [{:keys [person timestamp]} v
+                                                      {:keys [sec timezone]} timestamp]
+                                                  (str (name k) " " person " " sec " " timezone))
+                         (= k :message) (str "\n" v)
+                         :else (str (name k) " " v)))
+        commit-lines-as-str (clojure.string/join "\n" commit-lines)]
+    commit-lines-as-str))
 
 (defn parse-blob-object [project-root sha1]
   (let [blob-content (unwrap (cat-file project-root sha1))]
@@ -481,7 +496,7 @@
         timestamp (.. (java.util.Date.) getTime)
         sec (quot  timestamp 1000)
         author {:person "sto <son.c.to@gmail.com"
-                :timestamp {:sec sec :timezone -5}}
+                :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
         commit-map {:message message
                     :tree (write-tree project-root)
@@ -493,23 +508,19 @@
     commit-map))
 
 (defn commit [project-root]
-  ;;(write-tree project-root)
   (let [commit-map (commit-map project-root)
         commit-seq (commit-map->seq commit-map)
-        ;;commit-sha1 "664b942f06cf7c53de0bdca79586ed043d0a1bb5" ;;(str (hash-object "commit" commit-seq) "\n")
         sha1-hex-str (hash-object "commit" commit-seq)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
         commit (->> commit-seq (wrap "commit") io/compress)
         master-ref-path (str project-root "/.git/refs/heads/master")]
-    (prn "commiting " file-path)
     (io/squirt file-path commit)
     (spit master-ref-path (str sha1-hex-str "\n"))
     sha1-hex-str))
 
 (comment
-
   (def project-root "/home/sto/tmp/agit")
   (init {:dir project-root})
   
@@ -521,7 +532,7 @@
                   ))
 
   (def index (add project-root
-                  "bar.txt"
+                  "parse_git_index.c"
                   ))
 
   (def cm (log project-root))
