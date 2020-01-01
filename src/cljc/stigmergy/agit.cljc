@@ -5,12 +5,12 @@
             [stigmergy.voodoo :as vd]))
 
 (defn init
-  ([{:keys [dir]}]
+  ([{:keys [project-root]}]
    (let [git-dir ".git"
          mk-path (fn [file-or-dir]
                    (let [path (str git-dir "/" file-or-dir)]
-                     (if dir
-                       (str dir "/" path)
+                     (if project-root
+                       (str project-root "/" path)
                        path)))
          folders ["hooks" "info" "objects/info" "objects/pack" "refs/heads" "refs/tags"]
          folders (map mk-path 
@@ -507,21 +507,21 @@
 
 (comment
   (def project-root "/home/sto/tmp/agit")
-  (init {:dir project-root})
+  (init {:project-root project-root})
   
   (def index (parse-git-index (str project-root "/.git/index")))
 
   (def index (add project-root
                   "project.clj"
-                  "parse_git_index.c" 
-                  ))
+                  "parse_git_index.c"))
 
-  (def index (add project-root
-                  "parse_git_index.c"
-                  ))
-
+  (commit-map {:project-root project-root
+               :message "foobar"})
+  
+  (commit {:project-root project-root
+           :message "commited two files top level dir"})
+  
   (def cm (log project-root))
-  (def cm (commit-map project-root))
   
   (def st (status project-root))
   (map n/->path ["/src/foo.bar"])
@@ -546,8 +546,7 @@
 
   (def gobj (ls project-root))
 
-  
-  (write-tree project-root)
+    (write-tree project-root)
   (let [root-tree (parse-tree-object project-root "b84b2a329705f3fcaa99e38557ed4e1e18dd179e")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
                              (let [mode-path (vd/str->seq (str mode " " path))
@@ -559,13 +558,12 @@
     )
 
   (-> (cat-file project-root "633e7b552bb254ca72ded3fc493c441bf9b8a8e4")
-      vd/seq->char-seq
+       vd/seq->char-seq
       vd/char-seq->str)
   
   (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
   (commit-map {:project-root project-root :message "testing"})
-  (commit {:project-root project-root
-           :message "commited two files top level dir"})
+  
   
   (let [f1 (concat (vd/str->seq (str "100644" " " "baz.txt"))
                    [0]
