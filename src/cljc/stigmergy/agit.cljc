@@ -326,19 +326,6 @@
     (into {:message (-> commit last vd/char-seq->str)}
           kv-pairs)))
 
-#_(defn commit-map->seq [cm]
-  (let [ks [:tree :parent :author :committer :message]
-        commit-lines (for [k ks]
-                       (cond
-                         (or  (= k :author)
-                              (= k :committer)) (let [{:keys [person timestamp]} (k cm)
-                                                      {:keys [sec timezone]} timestamp]
-                                                  (str (name k) " " person " " sec " " timezone))
-                         (= k :message) (str "\n" (k cm))
-                         :else (str (name k) " " (k cm))))
-        commit-lines-as-str (clojure.string/join "\n" commit-lines)]
-    (vd/str->seq commit-lines-as-str)))
-
 (defn commit-map->seq [cm]
   (let [ks [:tree :parent :author :committer :message]
         commit-lines (for [k ks
@@ -445,8 +432,7 @@
   (reduce n/join-node nodes))
 
 (defn write-tree [project-root]
-  (let [;;index (parse-git-index (str project-root "/.git/index"))
-        status (status project-root)
+  (let [status (status project-root)
         new-entries (map index-entry->tree-entry  (:new status))
         modified-entries (map index-entry->tree-entry (:modified status))
         
@@ -488,11 +474,10 @@
     )
   )
 
-(defn commit-map [project-root]
+(defn commit-map [{:keys [project-root message]}]
   (let [status (status project-root)
         head-commit (first (log project-root))
         head-sha1 (:sha1 head-commit)
-        message "1"
         timestamp (.. (java.util.Date.) getTime)
         sec (quot  timestamp 1000)
         author {:person "sto <son.c.to@gmail.com"
@@ -507,8 +492,8 @@
                      commit-map)]
     commit-map))
 
-(defn commit [project-root]
-  (let [commit-map (commit-map project-root)
+(defn commit [{:keys [project-root] :as params}]
+  (let [commit-map (commit-map params)
         commit-seq (commit-map->seq commit-map)
         sha1-hex-str (hash-object "commit" commit-seq)
         two (vd/seq->str (take 2 sha1-hex-str))
@@ -579,7 +564,8 @@
   
   (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
   (commit-map project-root)
-  (commit project-root)
+  (commit {:project-root project-root
+           :message "commited two files top level dir"})
   
   (let [f1 (concat (vd/str->seq (str "100644" " " "baz.txt"))
                    [0]
@@ -594,11 +580,5 @@
     (hash-object "tree" f1+f2)
     )
 
-  {:message "1"
-   :tree "f45ddc24e41ed7b5086659b811b9694215b14506"
-   :author {:person "sto <son.c.to@gmail.com>"
-            :timestamp {:sec 1577675372 :timezone -5}}
-   :committer {:person "sto <son.c.to@gmail.com>"
-                 :timestamp {:sec 1577675372 :timezone -5}}
-   :sha1 "e4a9722e7f8254f7c79a06d043ab7b2bc45c8434"}
+
   )
