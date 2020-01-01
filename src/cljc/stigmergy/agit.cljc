@@ -327,13 +327,13 @@
           kv-pairs)))
 
 (defn commit-map->seq [cm]
-  (let [ks [:tree :parent :author :committer :message]
+  (let [ks [:tree :parent :author :commiter :message]
         commit-lines (for [k ks
                            :let [v (k cm)]
                            :when (-> v nil? not)]
                        (cond
                          (or  (= k :author)
-                              (= k :committer)) (let [{:keys [person timestamp]} v
+                              (= k :commiter)) (let [{:keys [person timestamp]} v
                                                       {:keys [sec timezone]} timestamp]
                                                   (str (name k) " " person " " sec " " timezone))
                          (= k :message) (str "\n" v)
@@ -480,17 +480,17 @@
         head-sha1 (:sha1 head-commit)
         timestamp (.. (java.util.Date.) getTime)
         sec (quot  timestamp 1000)
-        author {:person "sto <son.c.to@gmail.com"
+        author {:person "sto <son.c.to>@gmail.com"
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
-        commit-map {:message message
-                    :tree (write-tree project-root)
-                    :author author
-                    :commiter committer}
-        commit-map (if head-sha1
-                     (assoc commit-map :parent head-sha1)
-                     commit-map)]
-    commit-map))
+        cm {:message message
+            :tree (write-tree project-root)
+            :author author
+            :commiter committer}
+        cm (if head-sha1
+             (assoc cm :parent head-sha1)
+             cm)]
+    cm))
 
 (defn commit [{:keys [project-root] :as params}]
   (let [commit-map (commit-map params)
@@ -563,7 +563,7 @@
       vd/char-seq->str)
   
   (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
-  (commit-map project-root)
+  (commit-map {:project-root project-root :message "testing"})
   (commit {:project-root project-root
            :message "commited two files top level dir"})
   
@@ -580,5 +580,8 @@
     (hash-object "tree" f1+f2)
     )
 
-
+  (-> {:project-root project-root :message "foobar"}
+      commit-map
+      commit-map->seq
+      )
   )
