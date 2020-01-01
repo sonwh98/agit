@@ -298,7 +298,7 @@
         c (count fields)
         person (clojure.string/join " " (take (- c 2) fields))
         timestamp (take-last 2 fields)
-        timestamp {:sec (-> timestamp first Integer/parseInt)
+        timestamp {:sec (-> timestamp first Long/parseLong)
                    :timezone (->> timestamp second (drop-last 2) vd/char-seq->str Integer/parseInt)}]
     [person timestamp]))
 
@@ -480,7 +480,7 @@
         head-sha1 (:sha1 head-commit)
         timestamp (.. (java.util.Date.) getTime)
         sec (quot  timestamp 1000)
-        author {:person "sto <son.c.to>@gmail.com"
+        author {:person "sto <son.c.to@gmail.com>"
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
         cm {:message message
@@ -509,18 +509,19 @@
   (def project-root "/home/sto/tmp/agit")
   (init {:project-root project-root})
   
-  (def index (parse-git-index (str project-root "/.git/index")))
-
   (def index (add project-root
                   "project.clj"
                   "parse_git_index.c"))
 
-  (commit-map {:project-root project-root
-               :message "foobar"})
-  
   (commit {:project-root project-root
            :message "commited two files top level dir"})
-  
+
+  (def index (parse-git-index (str project-root "/.git/index")))
+
+    
+  (commit-map {:project-root project-root
+               :message "foobar"})
+    
   (def cm (log project-root))
   
   (def st (status project-root))
