@@ -140,4 +140,5 @@
                                (let [byte-count (.. decompressor (inflate buffer))]
                                  (..  baos (write buffer 0 byte-count))
                                  (recur [finished? (.. decompressor finished)]))))]
+    (prn "decompressed size=" (count decompressed-bytes)) ;;TODO something wrong here. not the correct size
     (vec decompressed-bytes)))

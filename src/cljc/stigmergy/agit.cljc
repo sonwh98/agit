@@ -71,8 +71,15 @@
   "unwrap git object returning the raw content as seq of bytes"
   [a-seq]
   (let [[obj-type size] (get-object-type-and-size a-seq)
-        content (take-last size a-seq)]
-    (assert (= (count content)
+        content (take-last size a-seq)
+        content-str (vd/seq->char-seq content)
+        ]
+    (prn "unwrap a-seq=" a-seq)
+    (prn "unwrap size="size)
+    (prn "countent size=" (count content))
+    (prn "content-str size=" (count content-str))
+    ;;(prn "content-str size=" (count content-str))
+    #_(assert (= (count content)
                size))
     content))
 
@@ -80,6 +87,7 @@
   "write blob to .git/objects return the sha1 hash of blob"
   [project-root content]
   (let [size (count content)
+        _ (prn "size=" size)
         sha1-hex-str (hash-object "blob" content)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
@@ -510,11 +518,16 @@
   (init {:project-root project-root})
   
   (def index (add project-root
-                  "project.clj"
+                  "project.clj"))
+
+  (def index (add project-root
                   "parse_git_index.c"))
 
+  (def index (add project-root
+                  "io.cljc"))
+
   (commit {:project-root project-root
-           :message "commited two files top level dir"})
+           :message "1"})
 
   (def index (parse-git-index (str project-root "/.git/index")))
 
@@ -525,6 +538,11 @@
   (def cm (log project-root))
   
   (def st (status project-root))
+
+  (-> (parse-blob-object project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
+      vd/seq->char-seq
+      vd/char-seq->str
+      )
   (map n/->path ["/src/foo.bar"])
   (parse-tree-object project-root "f45ddc24e41ed7b5086659b811b9694215b14506")
 
@@ -544,7 +562,8 @@
       vd/seq->char-seq
       vd/char-seq->str
       )
-
+  (vd/seq->str [51 56 48 55 0] )
+  
   (def gobj (ls project-root))
 
     (write-tree project-root)
@@ -558,10 +577,25 @@
     tree
     )
 
-  (-> (cat-file project-root "633e7b552bb254ca72ded3fc493c441bf9b8a8e4")
-       vd/seq->char-seq
-      vd/char-seq->str)
-  
+  (->> (cat-file project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
+       #_(take-last 3807)
+       get-object-type-and-size
+      #_vd/seq->char-seq
+      #_vd/char-seq->str)
+
+  (->> (cat-file project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
+       count
+       #_(take-last 1004)
+       #_vd/seq->char-seq
+       )
+
+    (->> (cat-file project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
+       count
+       #_(take-last 1004)
+       #_vd/seq->char-seq
+       )
+    
+    
   (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
   (commit-map {:project-root project-root :message "testing"})
   
@@ -583,4 +617,20 @@
       commit-map
       commit-map->seq
       )
+
+  (write-blob project-root "hello")
+
+  (use '[clojure.java.shell :only [sh]])
+
+  (sh "/usr/bin/git cat-file -p" "519408a5747c66ff45b792fa69f0811401e2dfa5" :dir "/home/sto/tmp/agit")
+
+  (defn cmp-content [sha1]
+    (let [cat (util/format "cd /home/sto/tmp/agit; git cat-file -p %s" sha1)]
+      (prn  (sh "sh" "-c" cat ))
+      ))
+  
+  (sh "sh" "-c" "cd /home/sto/tmp/agit; git cat-file -p 519408a5747c66ff45b792fa69f0811401e2dfa5")
+
+  (cmp-content "519408a5747c66ff45b792fa69f0811401e2dfa5")
+  
   )
