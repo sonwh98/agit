@@ -4,6 +4,8 @@
             [stigmergy.tily :as util]
             [stigmergy.voodoo :as vd]))
 
+(def project-root "/home/sto/tmp/agit")
+
 (defn init
   ([{:keys [project-root]}]
    (let [git-dir ".git"
@@ -71,15 +73,8 @@
   "unwrap git object returning the raw content as seq of bytes"
   [a-seq]
   (let [[obj-type size] (get-object-type-and-size a-seq)
-        content (take-last size a-seq)
-        content-str (vd/seq->char-seq content)
-        ]
-    (prn "unwrap a-seq=" a-seq)
-    (prn "unwrap size="size)
-    (prn "countent size=" (count content))
-    (prn "content-str size=" (count content-str))
-    ;;(prn "content-str size=" (count content-str))
-    #_(assert (= (count content)
+        content (take-last size a-seq)]
+    (assert (= (count content)
                size))
     content))
 
@@ -87,7 +82,6 @@
   "write blob to .git/objects return the sha1 hash of blob"
   [project-root content]
   (let [size (count content)
-        _ (prn "size=" size)
         sha1-hex-str (hash-object "blob" content)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
@@ -276,6 +270,7 @@
   (let [two (vd/seq->str (take 2 sha1))
         other (vd/seq->str (drop 2 sha1))
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)]
+    (prn "cat-file " file-path)
     (-> file-path
         io/suck
         io/decompress)))
@@ -366,8 +361,9 @@
                                                 vd/seq->str)
                                    sha1 (-> (take-last 42 git-path)
                                             vd/seq->str
-                                            (clojure.string/replace #"/" ""))]
-                               [git-path (vd/seq->str (cat-file project-root sha1)) sha1])
+                                            (clojure.string/replace #"/" ""))
+                                   t (vd/seq->str (cat-file project-root sha1))]
+                               [git-path t  sha1])
                             files)]
     path-type-sha1))
 
@@ -483,7 +479,7 @@
   )
 
 (defn commit-map [{:keys [project-root message]}]
-  (let [status (status project-root)
+  (let [;;status (status project-root)
         head-commit (first (log project-root))
         head-sha1 (:sha1 head-commit)
         timestamp (.. (java.util.Date.) getTime)
@@ -492,7 +488,7 @@
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
         cm {:message message
-            :tree (write-tree project-root)
+            :tree (write-tree project-root) ;;TODO suspect write-tree is wrong
             :author author
             :commiter committer}
         cm (if head-sha1
@@ -514,7 +510,7 @@
     sha1-hex-str))
 
 (comment
-  (def project-root "/home/sto/tmp/agit")
+
   (init {:project-root project-root})
   
   (def index (add project-root
@@ -527,9 +523,9 @@
                   "io.cljc"))
 
   (commit {:project-root project-root
-           :message "1"})
+           :message "3"})
 
-  (def index (parse-git-index (str project-root "/.git/index")))
+  (def index2 (parse-git-index (str project-root "/.git/index")))
 
     
   (commit-map {:project-root project-root
@@ -562,7 +558,7 @@
       vd/seq->char-seq
       vd/char-seq->str
       )
-  (vd/seq->str [51 56 48 55 0] )
+
   
   (def gobj (ls project-root))
 
@@ -589,11 +585,7 @@
        #_vd/seq->char-seq
        )
 
-    (->> (cat-file project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
-       count
-       #_(take-last 1004)
-       #_vd/seq->char-seq
-       )
+  (spit "/tmp/foo.txt" (cat-file-str project-root "306a9ea8cb563ba61de6d4f6462f4f3b70e52ef0"))
     
     
   (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
