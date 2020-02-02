@@ -137,8 +137,8 @@
                                (do
                                  (.. baos close)
                                  (.. baos toByteArray))
-                               (let [byte-count (.. decompressor (inflate buffer))]
+                               (let [byte-count (.. decompressor (inflate buffer))
+                                     finished? (.. decompressor finished)]
                                  (..  baos (write buffer 0 byte-count))
-                                 (recur [finished? (.. decompressor finished)]))))]
-    (prn "decompressed size=" (count decompressed-bytes)) ;;TODO something wrong here. not the correct size
+                                 (recur finished?))))]
     (vec decompressed-bytes)))
