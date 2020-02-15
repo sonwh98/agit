@@ -279,7 +279,7 @@
   (let [two (vd/seq->str (take 2 sha1))
         other (vd/seq->str (drop 2 sha1))
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)]
-    (prn "cat-file " file-path)
+    ;;(prn "cat-file " file-path)
     (-> file-path
         io/suck
         io/decompress)))
@@ -460,18 +460,20 @@
                                  e (assoc e :path path)]
                              e))
                           new-entries)
-        files (map :name (concat new-entries modified-entries unchanged-entries))
-        ;;_ (prn "new-entries=" new-entries)
-        files (map (fn [f]
-                     (-> f
-                         n/->path
-                         n/->node
-                         )) files)
+        files (concat new-entries modified-entries unchanged-entries)
+        _ (prn "files=" files)
+        _ (prn "new-entries=" new-entries)
+        ;; files (map (fn [f]
+        ;;              (-> f
+        ;;                  n/->path
+        ;;                  n/->node
+        ;;                  )) files)
+        ;; _ (prn "files2=" files)
         tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
                                    (concat mode-path [0] sha1-binary)))
-                               new-entries))
+                               files))
         sha1-hex-str (hash-object "tree" tree-seq)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
@@ -525,15 +527,18 @@
   
   (def index (add project-root
                   "project.clj"))
-
+  (commit {:project-root project-root
+           :message "1"})
+  
   (def index (add project-root
-                  "parse_git_index.c"))
-
+                  "parse_git_index.c")) ;;TODO why is this corrupted
+  (commit {:project-root project-root
+           :message "2"})
+  
   (def index (add project-root
                   "io.cljc"))
 
-  (commit {:project-root project-root
-           :message "3"})
+
 
   (def index2 (parse-git-index (str project-root "/.git/index")))
 
@@ -564,7 +569,7 @@
                                       :sha1 "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"}]
                                     )))
   
-  (-> (cat-file project-root "056bbe6c4ce04118e0e8e99135dfa8b92cac5e16")
+  (-> (cat-file project-root "306a9ea8cb563ba61de6d4f6462f4f3b70e52ef0")
       vd/seq->char-seq
       vd/char-seq->str
       )
@@ -636,3 +641,5 @@
   (cmp-content "519408a5747c66ff45b792fa69f0811401e2dfa5")
   
   )
+
+
