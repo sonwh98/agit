@@ -33,6 +33,15 @@
   ([]
    (init {})))
 
+(defn delete-directory-recursive [^java.io.File file]
+  (when (.isDirectory file)
+    (doseq [file-in-dir (.listFiles file)]
+      (delete-directory-recursive file-in-dir)))
+  (clojure.java.io/delete-file file))
+
+(defn delete [project-root]
+  (delete-directory-recursive (clojure.java.io/file (str project-root "/.git"))))
+
 (defn git-object-header
   [obj-type a-seq]
   (let [size (count a-seq)]
@@ -512,6 +521,7 @@
 (comment
 
   (init {:project-root project-root})
+  (delete project-root)
   
   (def index (add project-root
                   "project.clj"))
