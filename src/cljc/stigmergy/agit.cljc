@@ -404,6 +404,7 @@
         nested-files (let [commits (log project-root)]
                        (for [c commits]
                          (get-files project-root (:tree c) [])))
+        _ (prn "nested-files=" nested-files)
         _ (clojure.walk/postwalk (fn [v]
                                    (when (and (map? v)
                                               (not (some (fn [file]
@@ -413,11 +414,14 @@
                                      (swap! commit-files conj v))
                                    v)
                                  nested-files)
+        _ (prn "commit-files=" @commit-files)
         index (parse-git-index (str project-root "/.git/index"))
         index-entries (:entries index)
         result (for [{:keys [name sha1] :as index-entry} index-entries]
                  (cond
-                   (some #(= sha1 (:sha1 %)) @commit-files) [:no-change index-entry]
+                   (some #(= sha1 (:sha1 %)) @commit-files) (do
+                                                              (prn "index-entry=" index-entry)
+                                                              [:no-change index-entry])
                    (some (fn [c]
                            (let [name-paths (clojure.string/split name #"/")
                                  file-name (last name-paths)
@@ -427,6 +431,7 @@
                          @commit-files) [:modified index-entry]
                    (not (some #(= % index-entry) @commit-files)) [:new index-entry]
                    :else [:unknown index-entry]))
+        _ (prn "result1=" result)
         result (group-by first result)
         result {:modified (map second (:modified result))
                 :new (map second (:new result))
@@ -531,7 +536,8 @@
            :message "1"})
   
   (def index (add project-root
-                  "parse_git_index.c")) ;;TODO why is this corrupted
+                  "io.cljc"
+                  #_"parse_git_index.c"))
   (commit {:project-root project-root
            :message "2"})
   
