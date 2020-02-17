@@ -110,21 +110,14 @@
 (defn compress [a-seq]
   (let [compressor (java.util.zip.Deflater.)
         a-bytes (vd/seq->byte-array a-seq)
-        buffer (byte-array 1024)
-        baos (java.io.ByteArrayOutputStream.)
+
         _ (.. compressor (setInput a-bytes))
         _ (.. compressor finish)
-        compressed-bytes (loop [finished? false]
-                           (if finished?
-                             (do
-                               (.. baos close)
-                               (.. baos toByteArray))
-                             (let [byte-count (.. compressor (deflate buffer))]
-                               (..  baos (write buffer 0 byte-count))
-                               (recur [finished? (.. compressor finished)]))))]
-
-    
-    compressed-bytes))
+        bytes-compressed (byte-array Short/MAX_VALUE)
+        byte-count (.. compressor (deflate bytes-compressed))
+        ]
+    (prn "byte-count=" byte-count)
+    (vd/seq->byte-array (take byte-count bytes-compressed))))
 
 (defn decompress [compressed-data]
   (let [decompressor (java.util.zip.Inflater.)
