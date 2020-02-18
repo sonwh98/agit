@@ -457,19 +457,12 @@
 
 (defn get-files-in-snapshot [project-root]
   (let [status (status project-root)
-        new-entries (map index-entry->tree-entry  (:new status))
-        modified-entries (map index-entry->tree-entry (:modified status))
-        
-        unchanged-entries (map index-entry->tree-entry (:no-change status))
-        commits (log project-root)
-        head-commit (first commits)
-        head-tree (:tree head-commit)
-        files (concat new-entries modified-entries unchanged-entries)]
-    files))
+        index-entries (concat (:new status) (:modified status) (:no-change status))
+        tree-entries (map index-entry->tree-entry  index-entries)]
+    tree-entries))
 
 (defn tree-snapshot [project-root]
   (let [files (get-files-in-snapshot project-root)
-        _ (pprint files)
         tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
