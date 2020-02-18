@@ -475,7 +475,7 @@
         sha1-hex-str (hash-object "tree" tree-seq)]
     [sha1-hex-str tree-seq]))
 
-(defn write-tree [project-root]
+(defn write-compressed-tree-snapshot [project-root]
   (let [[sha1-hex-str tree-seq] (tree-snapshot project-root)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
@@ -493,7 +493,7 @@
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
         cm {:message message
-            :tree (write-tree project-root) #_(write-tree-snapshot project-root)
+            :tree #_(write-tree project-root) (write-compressed-tree-snapshot project-root)
             :author author
             :commiter committer}
         cm (if head-sha1
