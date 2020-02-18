@@ -450,53 +450,7 @@
 (defn mkdir [nodes]
   (reduce n/join-node nodes))
 
-(defn get-files-in-tree [status]
-  (let [new-entries (map index-entry->tree-entry  (:new status))
-        modified-entries (map index-entry->tree-entry (:modified status))
-        
-        unchanged-entries (map index-entry->tree-entry (:no-change status))
-        commits (log project-root)
-        head-commit (first commits)
-        head-tree (:tree head-commit)
-        new-entries (map (fn [e]
-                           (let [path (first (clojure.string/split (:name e) #"/"))
-                                 e (clojure.set/rename-keys e {:name :path})
-                                 e (select-keys e [:mode :path :sha1])
-                                 e (assoc e :path path)]
-                             e))
-                         new-entries)
-        files (concat new-entries modified-entries unchanged-entries)]
-    files))
-
-(defn mk-tree-seq [status]
-  (let [files (get-files-in-tree status)
-        tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
-                                 (let [mode-path (vd/str->seq (str mode " " path))
-                                       sha1-binary (vd/hex->seq sha1)]
-                                   (concat mode-path [0] sha1-binary)))
-                               files))]
-    tree-seq))
-
 (defn tree-snapshot [project-root]
-  (let [status (status project-root)
-        files (get-files-in-tree status)
-        tree-seq (mk-tree-seq files)
-        sha1-hex-str (hash-object "tree" tree-seq)]
-    [sha1-hex-str tree-seq]))
-
-(defn hash-current-index [project-root]
-  (first (tree-snapshot project-root)))
-
-(defn write-tree-snapshot [project-root]
-  (let [[sha1-hex-str  tree-seq] (tree-snapshot project-root)
-        two (vd/seq->str (take 2 sha1-hex-str))
-        other (vd/seq->str (drop 2 sha1-hex-str))
-        file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
-        tree (->> tree-seq (wrap "tree") io/compress)]
-    (io/squirt file-path tree)
-    sha1-hex-str))
-
-(defn write-tree [project-root]
   (let [status (status project-root)
         new-entries (map index-entry->tree-entry  (:new status))
         modified-entries (map index-entry->tree-entry (:modified status))
@@ -513,34 +467,22 @@
                              e))
                           new-entries)
         files (concat new-entries modified-entries unchanged-entries)
-        _ (prn "files=" files)
-        _ (prn "new-entries=" new-entries)
-        ;; files (map (fn [f]
-        ;;              (-> f
-        ;;                  n/->path
-        ;;                  n/->node
-        ;;                  )) files)
-        ;; _ (prn "files2=" files)
         tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
                                    (concat mode-path [0] sha1-binary)))
                                files))
-        sha1-hex-str (hash-object "tree" tree-seq)
+        sha1-hex-str (hash-object "tree" tree-seq)]
+    [sha1-hex-str tree-seq]))
+
+(defn write-tree [project-root]
+  (let [[sha1-hex-str tree-seq] (tree-snapshot project-root)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
-        tree (->> tree-seq (wrap "tree") io/compress)
-        ]
-    (io/squirt file-path tree)
-    sha1-hex-str
-    ;;head-tree
-    
-    ;;unchanged-entries
-    ;;(mkdir files)
-    )
-  )
-
+        compressed-tree (->> tree-seq (wrap "tree") io/compress)]
+    (io/squirt file-path compressed-tree)
+    sha1-hex-str))
 
 (defn commit-map [{:keys [project-root message]}]
   (let [head-commit (first (log project-root))
