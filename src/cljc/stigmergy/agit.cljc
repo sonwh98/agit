@@ -450,9 +450,8 @@
 (defn mkdir [nodes]
   (reduce n/join-node nodes))
 
-(defn tree-hash [project-root]
-  (let [status (status project-root)
-        new-entries (map index-entry->tree-entry  (:new status))
+(defn tree-hash [status]
+  (let [new-entries (map index-entry->tree-entry  (:new status))
         modified-entries (map index-entry->tree-entry (:modified status))
         
         unchanged-entries (map index-entry->tree-entry (:no-change status))
@@ -522,16 +521,16 @@
 
 
 (defn commit-map [{:keys [project-root message]}]
-  (let [;;status (status project-root)
-        head-commit (first (log project-root))
+  (let [head-commit (first (log project-root))
         head-sha1 (:sha1 head-commit)
         timestamp (.. (java.util.Date.) getTime)
         sec (quot  timestamp 1000)
         author {:person "sto <son.c.to@gmail.com>"
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
+        status (status project-root)
         cm {:message message
-            :tree (tree-hash project-root) ;;TODO suspect write-tree is wrong
+            :tree (tree-hash status) ;;TODO suspect write-tree is wrong
             :author author
             :commiter committer}
         cm (if head-sha1
