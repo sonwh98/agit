@@ -487,7 +487,7 @@
 (defn hash-current-index [project-root]
   (first (tree-snapshot project-root)))
 
-(defn write-tree [project-root]
+(defn write-tree-snapshot [project-root]
   (let [[sha1-hex-str  tree-seq] (tree-snapshot project-root)
         two (vd/seq->str (take 2 sha1-hex-str))
         other (vd/seq->str (drop 2 sha1-hex-str))
@@ -496,7 +496,7 @@
     (io/squirt file-path tree)
     sha1-hex-str))
 
-#_(defn write-tree [project-root]
+(defn write-tree [project-root]
   (let [status (status project-root)
         new-entries (map index-entry->tree-entry  (:new status))
         modified-entries (map index-entry->tree-entry (:modified status))
@@ -551,7 +551,7 @@
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
         cm {:message message
-            :tree (hash-current-index project-root) ;;TODO suspect write-tree is wrong
+            :tree (write-tree project-root) #_(write-tree-snapshot project-root)
             :author author
             :commiter committer}
         cm (if head-sha1
