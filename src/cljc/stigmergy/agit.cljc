@@ -455,19 +455,19 @@
 (defn mkdir [nodes]
   (reduce n/join-node nodes))
 
-(defn get-files-in-snapshot [project-root]
+(defn get-tree-entries-in-snapshot [project-root]
   (let [status (status project-root)
         index-entries (concat (:new status) (:modified status) (:no-change status))
         tree-entries (map index-entry->tree-entry  index-entries)]
     tree-entries))
 
 (defn tree-snapshot [project-root]
-  (let [files (get-files-in-snapshot project-root)
+  (let [tree-entries (get-tree-entries-in-snapshot project-root)
         tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
                                    (concat mode-path [0] sha1-binary)))
-                               files))
+                               tree-entries))
         sha1-hex-str (hash-object "tree" tree-seq)]
     (prn "sha1-hex-str=" sha1-hex-str)
     [sha1-hex-str tree-seq]))
