@@ -1,5 +1,6 @@
 (ns stigmergy.agit
-  (:require [stigmergy.io :as io]
+  (:require [clojure.pprint :refer :all]
+            [stigmergy.io :as io]
             [stigmergy.node :as n]
             [stigmergy.tily :as util]
             [stigmergy.voodoo :as vd]))
@@ -449,6 +450,31 @@
 (defn mkdir [nodes]
   (reduce n/join-node nodes))
 
+(defn tree-hash [project-root]
+  (let [status (status project-root)
+        new-entries (map index-entry->tree-entry  (:new status))
+        modified-entries (map index-entry->tree-entry (:modified status))
+        
+        unchanged-entries (map index-entry->tree-entry (:no-change status))
+        commits (log project-root)
+        head-commit (first commits)
+        head-tree (:tree head-commit)
+        new-entries (map (fn [e]
+                           (let [path (first (clojure.string/split (:name e) #"/"))
+                                 e (clojure.set/rename-keys e {:name :path})
+                                 e (select-keys e [:mode :path :sha1])
+                                 e (assoc e :path path)]
+                             e))
+                          new-entries)
+        files (concat new-entries modified-entries unchanged-entries)
+        tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
+                                 (let [mode-path (vd/str->seq (str mode " " path))
+                                       sha1-binary (vd/hex->seq sha1)]
+                                   (concat mode-path [0] sha1-binary)))
+                               files))
+        sha1-hex-str (hash-object "tree" tree-seq)]
+    sha1-hex-str))
+
 (defn write-tree [project-root]
   (let [status (status project-root)
         new-entries (map index-entry->tree-entry  (:new status))
@@ -494,6 +520,7 @@
     )
   )
 
+
 (defn commit-map [{:keys [project-root message]}]
   (let [;;status (status project-root)
         head-commit (first (log project-root))
@@ -504,7 +531,7 @@
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
         cm {:message message
-            :tree (write-tree project-root) ;;TODO suspect write-tree is wrong
+            :tree (tree-hash project-root) ;;TODO suspect write-tree is wrong
             :author author
             :commiter committer}
         cm (if head-sha1
@@ -540,6 +567,9 @@
                   #_"parse_git_index.c"))
   (commit {:project-root project-root
            :message "2"})
+
+  (commit-map {:project-root project-root
+               :message "3"})
   
   (def index (add project-root
                   "io.cljc"))
