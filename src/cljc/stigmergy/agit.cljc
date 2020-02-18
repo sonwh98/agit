@@ -450,7 +450,7 @@
 (defn mkdir [nodes]
   (reduce n/join-node nodes))
 
-(defn tree-hash [status]
+(defn mk-tree-seq [status]
   (let [new-entries (map index-entry->tree-entry  (:new status))
         modified-entries (map index-entry->tree-entry (:modified status))
         
@@ -470,7 +470,11 @@
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
                                    (concat mode-path [0] sha1-binary)))
-                               files))
+                               files))]
+    tree-seq))
+
+(defn tree-hash [status]
+  (let [tree-seq (mk-tree-seq status)
         sha1-hex-str (hash-object "tree" tree-seq)]
     sha1-hex-str))
 
