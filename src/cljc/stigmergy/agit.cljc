@@ -405,7 +405,7 @@
         nested-files (let [commits (log project-root)]
                        (for [c commits]
                          (get-files project-root (:tree c) [])))
-        _ (prn "nested-files=" nested-files)
+        ;;_ (prn "nested-files=" nested-files)
         _ (clojure.walk/postwalk (fn [v]
                                    (when (and (map? v)
                                               (not (some (fn [file]
@@ -415,7 +415,7 @@
                                      (swap! commit-files conj v))
                                    v)
                                  nested-files)
-        _ (prn "commit-files=" @commit-files)
+        ;;_ (prn "commit-files=" @commit-files)
         index (parse-git-index (str project-root "/.git/index"))
         index-entries (:entries index)
         result (for [{:keys [name sha1] :as index-entry} index-entries]
@@ -432,7 +432,7 @@
                          @commit-files) [:modified index-entry]
                    (not (some #(= % index-entry) @commit-files)) [:new index-entry]
                    :else [:unknown index-entry]))
-        _ (prn "result1=" result)
+        ;;_ (prn "result1=" result)
         result (group-by first result)
         result {:modified (map second (:modified result))
                 :new (map second (:new result))
@@ -445,12 +445,17 @@
   )
 
 (defn index-entry->tree-entry [index-entry]
-  (select-keys index-entry [:mode :name :sha1]))
+  (let [tree-entry (select-keys index-entry [:mode :name :sha1])
+        path (first (clojure.string/split (:name tree-entry) #"/"))
+        tree-entry (-> tree-entry
+                       (assoc :path path)
+                       (dissoc :name))]
+    tree-entry))
 
 (defn mkdir [nodes]
   (reduce n/join-node nodes))
 
-(defn tree-snapshot [project-root]
+(defn get-files-in-snapshot [project-root]
   (let [status (status project-root)
         new-entries (map index-entry->tree-entry  (:new status))
         modified-entries (map index-entry->tree-entry (:modified status))
@@ -459,20 +464,19 @@
         commits (log project-root)
         head-commit (first commits)
         head-tree (:tree head-commit)
-        new-entries (map (fn [e]
-                           (let [path (first (clojure.string/split (:name e) #"/"))
-                                 e (clojure.set/rename-keys e {:name :path})
-                                 e (select-keys e [:mode :path :sha1])
-                                 e (assoc e :path path)]
-                             e))
-                          new-entries)
-        files (concat new-entries modified-entries unchanged-entries)
+        files (concat new-entries modified-entries unchanged-entries)]
+    files))
+
+(defn tree-snapshot [project-root]
+  (let [files (get-files-in-snapshot project-root)
+        _ (pprint files)
         tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
                                    (concat mode-path [0] sha1-binary)))
                                files))
         sha1-hex-str (hash-object "tree" tree-seq)]
+    (prn "sha1-hex-str=" sha1-hex-str)
     [sha1-hex-str tree-seq]))
 
 (defn write-compressed-tree-snapshot [project-root]
@@ -528,10 +532,10 @@
                   "io.cljc"
                   #_"parse_git_index.c"))
   (commit {:project-root project-root
-           :message "3"})
+           :message "2"})
 
   (commit-map {:project-root project-root
-               :message "1"})
+               :message "2"})
   
   (def index (add project-root
                   "io.cljc"))
@@ -553,21 +557,21 @@
       vd/char-seq->str
       )
   (map n/->path ["/src/foo.bar"])
-  (parse-tree-object project-root "f45ddc24e41ed7b5086659b811b9694215b14506")
+  (parse-tree-object project-root "ec80309431d4146761ea787f1e275461df7d1a39")
 
   (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
                                         (let [mode-path (vd/str->seq (str mode " " path))
                                               sha1-binary (vd/hex->seq sha1)]
                                           (concat mode-path [0] sha1-binary)))
                                     [{:mode "100644"
-                                      :path "parse_git_index.c"
-                                      :sha1 "306a9ea8cb563ba61de6d4f6462f4f3b70e52ef0"}
+                                      :path "io.cljc"
+                                      :sha1 "9404fd7a4dd2e63bf6acc2bf2fa8867b5c0e3b55"}
                                      {:mode "100644"
                                       :path "project.clj"
-                                      :sha1 "e00a70c4aeaa5c8d039946f606c6c001f8cc5ca4"}]
+                                      :sha1 "519408a5747c66ff45b792fa69f0811401e2dfa5"}]
                                     )))
   
-  (-> (cat-file project-root "306a9ea8cb563ba61de6d4f6462f4f3b70e52ef0")
+  (-> (cat-file project-root #_"16140255816d1b73fb118cab0a660829b3f02cd0" "ec80309431d4146761ea787f1e275461df7d1a39")
       vd/seq->char-seq
       vd/char-seq->str
       )
@@ -576,14 +580,14 @@
   (def gobj (ls project-root))
 
     (write-tree project-root)
-  (let [root-tree (parse-tree-object project-root "b84b2a329705f3fcaa99e38557ed4e1e18dd179e")
+  (let [root-tree (parse-tree-object project-root "ec80309431d4146761ea787f1e275461df7d1a39" #_"16140255816d1b73fb118cab0a660829b3f02cd0")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
                              (let [mode-path (vd/str->seq (str mode " " path))
                                    sha1-binary (vd/hex->seq sha1)]
                                (concat mode-path [0] sha1-binary)))
                            root-tree))]
-    #_(hash-object "tree" tree)
-    tree
+    (hash-object "tree" tree)
+
     )
 
   (->> (cat-file project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
