@@ -280,7 +280,6 @@
   (let [two (vd/seq->str (take 2 sha1))
         other (vd/seq->str (drop 2 sha1))
         file-path (util/format "%s/.git/objects/%s/%s" project-root two other)]
-    ;;(prn "cat-file " file-path)
     (-> file-path
         io/suck
         io/decompress)))
@@ -483,7 +482,7 @@
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
         cm {:message message
-            :tree #_(write-tree project-root) (write-compressed-tree-snapshot project-root)
+            :tree (write-compressed-tree-snapshot project-root)
             :author author
             :commiter committer}
         cm (if head-sha1
@@ -565,7 +564,7 @@
   
   (def gobj (ls project-root))
 
-    (write-tree project-root)
+  (write-tree project-root)
   (let [root-tree (parse-tree-object project-root "ec80309431d4146761ea787f1e275461df7d1a39" #_"16140255816d1b73fb118cab0a660829b3f02cd0")
         tree (flatten (map (fn [{:keys [mode path sha1]}]
                              (let [mode-path (vd/str->seq (str mode " " path))
@@ -573,61 +572,8 @@
                                (concat mode-path [0] sha1-binary)))
                            root-tree))]
     (hash-object "tree" tree)
-
     )
-
-  (->> (cat-file project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
-       #_(take-last 3807)
-       get-object-type-and-size
-      #_vd/seq->char-seq
-      #_vd/char-seq->str)
-
-  (->> (cat-file project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
-       count
-       #_(take-last 1004)
-       #_vd/seq->char-seq
-       )
-
-  (spit "/tmp/foo.txt" (cat-file-str project-root "306a9ea8cb563ba61de6d4f6462f4f3b70e52ef0"))
     
-    
-  (parse-tree-object project-root "59b793192c0653e86f7b7d4532b598450f1a4444")
-  (commit-map {:project-root project-root :message "testing"})
-  
-  
-  (let [f1 (concat (vd/str->seq (str "100644" " " "baz.txt"))
-                   [0]
-                   (vd/hex->seq "76018072e09c5d31c8c6e3113b8aa0fe625195ca"))
-        f1-2 (concat (vd/str->seq (str "100644" " " "foo.txt"))
-                     [0]
-                     (vd/hex->seq "448d72f5402480b2edb332446aafccfd579eb94d"))
-        f2 (concat (vd/str->seq (str "100644" " " "hi.txt"))
-                   [0]
-                   (vd/hex->seq "45b983be36b73c0788dc9cbcb76cbb80fc7bb057"))
-        f1+f2 (concat f1 f1-2 f2)]
-    (hash-object "tree" f1+f2)
-    )
-
-  (-> {:project-root project-root :message "foobar"}
-      commit-map
-      commit-map->seq
-      )
-
-  (write-blob project-root "hello")
-
-  (use '[clojure.java.shell :only [sh]])
-
-  (sh "/usr/bin/git cat-file -p" "519408a5747c66ff45b792fa69f0811401e2dfa5" :dir "/home/sto/tmp/agit")
-
-  (defn cmp-content [sha1]
-    (let [cat (util/format "cd /home/sto/tmp/agit; git cat-file -p %s" sha1)]
-      (prn  (sh "sh" "-c" cat ))
-      ))
-  
-  (sh "sh" "-c" "cd /home/sto/tmp/agit; git cat-file -p 519408a5747c66ff45b792fa69f0811401e2dfa5")
-
-  (cmp-content "519408a5747c66ff45b792fa69f0811401e2dfa5")
-  
   )
 
 
