@@ -450,7 +450,7 @@
 (defn mkdir [nodes]
   (reduce n/join-node nodes))
 
-(defn mk-tree-seq [status]
+(defn get-files-in-tree [status]
   (let [new-entries (map index-entry->tree-entry  (:new status))
         modified-entries (map index-entry->tree-entry (:modified status))
         
@@ -464,8 +464,12 @@
                                  e (select-keys e [:mode :path :sha1])
                                  e (assoc e :path path)]
                              e))
-                          new-entries)
-        files (concat new-entries modified-entries unchanged-entries)
+                         new-entries)
+        files (concat new-entries modified-entries unchanged-entries)]
+    files))
+
+(defn mk-tree-seq [status]
+  (let [files (get-files-in-tree status)
         tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
@@ -473,12 +477,26 @@
                                files))]
     tree-seq))
 
-(defn tree-hash [status]
-  (let [tree-seq (mk-tree-seq status)
+(defn tree-snapshot [project-root]
+  (let [status (status project-root)
+        files (get-files-in-tree status)
+        tree-seq (mk-tree-seq files)
         sha1-hex-str (hash-object "tree" tree-seq)]
-    sha1-hex-str))
+    [sha1-hex-str tree-seq]))
+
+(defn hash-current-index [project-root]
+  (first (tree-snapshot project-root)))
 
 (defn write-tree [project-root]
+  (let [[sha1-hex-str  tree-seq] (tree-snapshot project-root)
+        two (vd/seq->str (take 2 sha1-hex-str))
+        other (vd/seq->str (drop 2 sha1-hex-str))
+        file-path (util/format "%s/.git/objects/%s/%s" project-root two other)
+        tree (->> tree-seq (wrap "tree") io/compress)]
+    (io/squirt file-path tree)
+    sha1-hex-str))
+
+#_(defn write-tree [project-root]
   (let [status (status project-root)
         new-entries (map index-entry->tree-entry  (:new status))
         modified-entries (map index-entry->tree-entry (:modified status))
@@ -532,9 +550,8 @@
         author {:person "sto <son.c.to@gmail.com>"
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
-        status (status project-root)
         cm {:message message
-            :tree (tree-hash status) ;;TODO suspect write-tree is wrong
+            :tree (hash-current-index project-root) ;;TODO suspect write-tree is wrong
             :author author
             :commiter committer}
         cm (if head-sha1
@@ -569,10 +586,10 @@
                   "io.cljc"
                   #_"parse_git_index.c"))
   (commit {:project-root project-root
-           :message "2"})
+           :message "3"})
 
   (commit-map {:project-root project-root
-               :message "3"})
+               :message "1"})
   
   (def index (add project-root
                   "io.cljc"))
