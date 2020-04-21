@@ -442,11 +442,11 @@
     tree-entry))
 
 (defn build-dir [paths]
-    (cond
-      (= 2 (count paths)) (let [[parent child] paths]
-                            [parent [child]])
-      :else (let [parent (first paths)]
-              [parent (build-dir (rest paths))])))
+  (if (= 2 (count paths))
+    (let [[parent child] paths]
+      [parent [child]])
+    (let [parent (first paths)]
+      [parent (build-dir (rest paths))])))
 
 (defn get-tree-entries-in-snapshot [project-root]
   (let [{:keys [new modified no-change]} (status project-root)
@@ -621,22 +621,67 @@
             []
             dirs)
     )
+
+  (defn build-tree [dir1 dir2]
+    (let [[parent1 children1] dir1
+          [parent2 children2] dir2]
+      (cond
+        (= parent1 parent2) [parent1 (build-tree children1 children2)]
+        (nil? dir2) dir1
+        :else [(build-tree dir1 nil) (build-tree dir2 nil)]
+        )
+      ))
+  
+  (build-tree ["src" ["clj" ["add.clj"]]]
+              ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
+
+              )
+
+  (defn build-forest [dirs]
+    (reduce (fn [acc dir]
+            (let [[parent children] dir
+                  found (first (filter (fn [[p c]]
+                                         (= p parent))
+                                       acc))]
+              (cond
+                found (let [[p c] found]
+                        [p (build-tree c children)])
+                :else (let [[p c] (build-tree dir nil)]
+                        (conj [acc] (build-tree dir nil))))))
+          []
+          dirs))
+
+  (build-forest [["src" ["clj" ["add.clj"]]]
+                 ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
+                 ["test" ["lambda.jpg"]]
+                 ])
+  
   
 
-  ["src" "clj" "add.clj"] => ["src" ["clj" ["add.clj"]]]
-  ["src" "cljc" "stigmergy" "agit.cljc"]  => ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
+  (reduce (fn [acc dir]
+            (let [[parent children] dir
+                  found (first (filter (fn [[p c]]
+                                         (= p parent))
+                                       acc))]
+              (cond
+                found (let [[p c] found]
+                        [p (build-tree c children)])
+                :else (let [[p c] (build-tree dir nil)]
+                        (conj [acc] (build-tree dir nil))))))
+          []
+          [["src" ["clj" ["add.clj"]]]
+           ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
+           ["test" ["lambda.jpg"]]
+           ]
+          )
 
-  
-  
+
+  [["src" [["clj" ["add.clj"]] ["cljc" ["stigmergy" ["agit.cljc"]]]]]
+   ["test" ["lambda.jpg"]]]
   
   (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
   
 
-  (let [paths ["src" "cljc" "stigmergy" "agit.cljc"]]
-    (build-dir [] paths)
-    )
-  
-  (clojure.string/split "src/clj/add.clj" #"/")
   )
 
 
