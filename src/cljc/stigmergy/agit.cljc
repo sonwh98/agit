@@ -548,8 +548,18 @@
       vd/char-seq->str
       )
   (map n/->path ["/src/foo.bar"])
-  (parse-tree-object project-root "ec80309431d4146761ea787f1e275461df7d1a39")
-
+  (parse-tree-object project-root "a672dea289281cfda525e228eb5750cbc932b6cf")
+  (parse-tree-object project-root "8bb8177731e14225fbcd14bb0ec99d7fb9392e46")
+  (parse-tree-object project-root "f7adef825635430158f301630b0845869f61dd44")
+  (parse-tree-object project-root "d3a17365deab73f0409e25868bf9643f44f85dab")
+  (parse-blob-object project-root "9ea856d4823304e8f743fcab5920e708692ef6ce")
+  
+  ;;;
+  (parse-tree-object project-root "592de38f0fa477264639cb6aa0c699942877f3c6")
+  (parse-tree-object project-root "1abeaa9c97b958ff98ffd6eb734ccef7428a65c3")
+  
+  
+  
   (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
                                         (let [mode-path (vd/str->seq (str mode " " path))
                                               sha1-binary (vd/hex->seq sha1)]
@@ -592,6 +602,31 @@
     )
 
   (get-tree-entries-in-snapshot project-root)
+
+  (let [file-paths  ["src/clj/add.clj" "src/cljc/stigmergy/agit.cljc"]
+        foo (map #(clojure.string/split % #"/") file-paths)]
+    foo
+    )
+
+  ["src" "clj" "add.clj"] => ["src" ["clj" ["add.clj"]]]
+  ["src" "cljc" "stigmergy" "agit.cljc"]  => ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
+
+  
+  (defn build-dir [paths]
+    (cond
+      (= 2 (count paths)) (let [[parent child] paths]
+                            [parent [child]])
+      :else (let [parent (first paths)]
+              [parent (build-dir (rest paths))])))
+  
+  (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
+  
+
+  (let [paths ["src" "cljc" "stigmergy" "agit.cljc"]]
+    (build-dir [] paths)
+    )
+  
+  (clojure.string/split "src/clj/add.clj" #"/")
   )
 
 
