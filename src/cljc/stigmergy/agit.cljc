@@ -648,15 +648,17 @@
                         [p (build-tree c children)])
                 :else (let [[p c] (build-tree dir nil)]
                         (conj [acc] (build-tree dir nil))))))
-          []
+            []
           dirs))
 
   (build-forest [["src" ["clj" ["add.clj"]]]
                  ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
                  ["test" ["lambda.jpg"]]
                  ])
-  
-  
+
+  [["src" [["clj" ["add.clj"]]
+           ["cljc" ["stigmergy" ["agit.cljc"]]]]]
+   ["test" ["lambda.jpg"]]]
 
   (reduce (fn [acc dir]
             (let [[parent children] dir
@@ -675,10 +677,6 @@
            ]
           )
 
-
-  [["src" [["clj" ["add.clj"]] ["cljc" ["stigmergy" ["agit.cljc"]]]]]
-   ["test" ["lambda.jpg"]]]
-  
   (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
   
 
