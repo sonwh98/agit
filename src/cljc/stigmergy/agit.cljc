@@ -451,7 +451,11 @@
 (defn get-tree-entries-in-snapshot [project-root]
   (let [{:keys [new modified no-change]} (status project-root)
         index-entries (concat new modified no-change)
-        _ (prn "index-entries=" index-entries)
+        paths (map (fn [index-entry]
+                     (clojure.string/split (:name index-entry) #"/" ))
+                   index-entries)
+        dirs (map #(build-dir %) paths)
+        _ (prn "dirs=" dirs)
         tree-entries (map index-entry->tree-entry  index-entries)]
     tree-entries))
 
@@ -603,11 +607,21 @@
     )
 
   (get-tree-entries-in-snapshot project-root)
+  (let [dirs [["src" ["clj" ["add.clj"]]]
+              ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]]]
+    ;;build dir tree
+    (reduce (fn [acc dir]
+              (cond
+                (empty? acc) dir
 
-  (let [file-paths  ["src/clj/add.clj" "src/cljc/stigmergy/agit.cljc"]
-        foo (map #(clojure.string/split % #"/") file-paths)]
-    foo
+                :else (let [[parent child] acc]
+                        
+                        ))
+              )
+            []
+            dirs)
     )
+  
 
   ["src" "clj" "add.clj"] => ["src" ["clj" ["add.clj"]]]
   ["src" "cljc" "stigmergy" "agit.cljc"]  => ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
