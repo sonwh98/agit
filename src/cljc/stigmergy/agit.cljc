@@ -433,10 +433,6 @@
                 :no-change (map second (:no-change result))}]
     result))
 
-(defn mk-tree [parent path]
-
-  )
-
 (defn index-entry->tree-entry [index-entry]
   (let [tree-entry (select-keys index-entry [:mode :name :sha1])
         path (first (clojure.string/split (:name tree-entry) #"/"))
@@ -445,12 +441,17 @@
                        (dissoc :name))]
     tree-entry))
 
-(defn mkdir [nodes]
-  (reduce n/join-node nodes))
+(defn build-dir [paths]
+    (cond
+      (= 2 (count paths)) (let [[parent child] paths]
+                            [parent [child]])
+      :else (let [parent (first paths)]
+              [parent (build-dir (rest paths))])))
 
 (defn get-tree-entries-in-snapshot [project-root]
   (let [{:keys [new modified no-change]} (status project-root)
         index-entries (concat new modified no-change)
+        _ (prn "index-entries=" index-entries)
         tree-entries (map index-entry->tree-entry  index-entries)]
     tree-entries))
 
@@ -612,12 +613,7 @@
   ["src" "cljc" "stigmergy" "agit.cljc"]  => ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
 
   
-  (defn build-dir [paths]
-    (cond
-      (= 2 (count paths)) (let [[parent child] paths]
-                            [parent [child]])
-      :else (let [parent (first paths)]
-              [parent (build-dir (rest paths))])))
+  
   
   (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
   
