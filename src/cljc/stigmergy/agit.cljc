@@ -449,8 +449,8 @@
   (reduce n/join-node nodes))
 
 (defn get-tree-entries-in-snapshot [project-root]
-  (let [status (status project-root)
-        index-entries (concat (:new status) (:modified status) (:no-change status))
+  (let [{:keys [new modified no-change]} (status project-root)
+        index-entries (concat new modified no-change)
         tree-entries (map index-entry->tree-entry  index-entries)]
     tree-entries))
 
@@ -482,7 +482,6 @@
                 :timestamp {:sec sec :timezone "-0500"}} ;;hardcoded timezone
         committer author
         cm {:message message
-            :tree (write-compressed-tree-snapshot project-root)
             :author author
             :commiter committer}
         cm (if head-sha1
@@ -492,6 +491,7 @@
 
 (defn commit [{:keys [project-root] :as params}]
   (let [commit-map (commit-map params)
+        commit-map (assoc commit-map :tree (write-compressed-tree-snapshot project-root))
         commit-seq (commit-map->seq commit-map)
         sha1-hex-str (hash-object "commit" commit-seq)
         two (vd/seq->str (take 2 sha1-hex-str))
@@ -516,8 +516,12 @@
   (def index (add project-root
                   "io.cljc"
                   "parse_git_index.c"))
+
+  (def index (add project-root
+                  "src/cljc/stigmergy/agit.cljc"))
+  
   (commit {:project-root project-root
-           :message "3"})
+           :message "2"})
 
   (commit-map {:project-root project-root
                :message "3"})
@@ -537,6 +541,8 @@
   
   (def st (status project-root))
 
+  (write-compressed-tree-snapshot project-root)
+  
   (-> (parse-blob-object project-root "519408a5747c66ff45b792fa69f0811401e2dfa5")
       vd/seq->char-seq
       vd/char-seq->str
@@ -555,6 +561,17 @@
                                       :path "project.clj"
                                       :sha1 "519408a5747c66ff45b792fa69f0811401e2dfa5"}]
                                     )))
+
+
+  (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
+                                        (let [mode-path (vd/str->seq (str mode " " path))
+                                              sha1-binary (vd/hex->seq sha1)]
+                                          (concat mode-path [0] sha1-binary)))
+                                    [{:mode "100644"
+                                      :path "io.cljc"
+                                      :sha1 "9404fd7a4dd2e63bf6acc2bf2fa8867b5c0e3b55"}]
+                                    )))
+  
   
   (-> (cat-file project-root #_"16140255816d1b73fb118cab0a660829b3f02cd0" "ec80309431d4146761ea787f1e275461df7d1a39")
       vd/seq->char-seq
@@ -573,7 +590,8 @@
                            root-tree))]
     (hash-object "tree" tree)
     )
-    
+
+  (get-tree-entries-in-snapshot project-root)
   )
 
 
