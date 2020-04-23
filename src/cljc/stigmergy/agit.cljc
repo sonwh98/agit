@@ -703,6 +703,12 @@
 
   (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
 
+  (defn combine [[p1 c1 :as dir1] [p2 c2 :as dir2]]
+    (if (= p1 p2)
+      [p1 (concat c1 c2)]
+      [dir1 dir2])
+    )
+  
   (defn build-tree2 [& directories]
     (reduce
      (fn [tree dir]
@@ -715,14 +721,12 @@
                                               tree))]
            (prn "root=" root)
            (if root
-             (let [children1 (first children)
-                   children2 (second dir)
-                   children2 (first children2)]
+             (let [children1 children
+                   children2 (second dir)]
                (prn "c1=" children1)
                (prn "c2=" children2)
-               (if (sequential? children1)
-                 [root [(build-tree2  children1 children2)]]
-                 [root (build-tree2  children1 children2)]))
+               [[root (vec (concat children1 children2))]]
+               )
              (vec (conj tree dir))))))
      []
      directories)
@@ -731,21 +735,36 @@
   (build-tree2 #_["src" ["clj" ["add.clj"]]]
                ["src" ["agit.cljc"]]
                ["src" ["foo.cljc"]]
-               
+               ["src" ["bar.cljc"]]
                )
 
-  (build-tree2 ["src" [["clj" ["agit.cljc"]]]]
-               ["src" [["clj" ["foo.cljc"]]]]
-               ;;["src" [["clj" ["bar.cljc"]]]]
+  (build-tree2 ["src" [["clj" ["agit.cljc" "test.cljc"]]]]
+               ;;["src" [["clj" ["foo.cljc"]]]]
+               ["src" [["clj" ["bar.cljc"]]]]
                )
 
+  (combine ["clj" ["agit.cljc" "test.cljc"]]
+           ["clj" ["bar.cljc"]])
+
+  (combine ["src" [["clj" ["agit.cljc" "test.cljc"]]]]
+           ["src" [["clj" ["bar.cljc"]]]])
+
+  (combine ["clj" ["agit.cljc" "test.cljc"]]
+           ["clj" ["bar.cljc"]])
   [
    ["src" [["clj" ["agit.cljc" "foo.cljc" "bar.cljc"]]]]
 
    ]
   
+  [
+   ["src"
+    [["clj" ["agit.cljc" "test.cljc"]]
+     ["clj" ["bar.cljc"]]]
+    ]
 
-  [["src" [["clj" ["agit.cljc" "foo.cljc"]]]]]
+   ]
+  
+
   )
 
 
