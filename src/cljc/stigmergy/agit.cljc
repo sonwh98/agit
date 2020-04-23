@@ -703,45 +703,29 @@
 
   (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
 
-  (defn combine [[p1 c1 :as dir1] [p2 c2 :as dir2]]
-    (if (= p1 p2)
-      [p1 (concat c1 c2)]
-      [dir1 dir2])
+  (defn combine [path1 path2]
+    (prn "path1=" path1)
+    (prn "path2=" path2)
+    (let [parent1 (first path1)
+          parent2 (first path2)]
+      (cond
+        (= parent1 parent2) (let [children1 (second path1)
+                                  children2 (second path2)]
+                              [parent1 (combine children1 children2)])
+        (and (every? string? path1)
+             (every? string? path2)) (do
+                                       (prn "foo1 " path1)
+                                       (prn "foo2 " path2)
+                                       (vec (concat path1 path2)))
+        
+        :else (let [dir1 (first (filter vector? path1))
+                    dir2 (first (filter vector? path2))]
+                (prn "dir1=" dir1)
+                (prn "dir2=" dir2)
+                (combine dir1 dir2) 
+                )))
     )
   
-  (defn build-tree2 [& directories]
-    (reduce
-     (fn [tree dir]
-       (prn "tree=" tree)
-       (prn "dir=" dir)
-       (if (empty? tree)
-         [dir]
-         (let [[root children] (first (filter (fn [[parent children]]
-                                                (= parent (first dir)))
-                                              tree))]
-           (prn "root=" root)
-           (if root
-             (let [children1 children
-                   children2 (second dir)]
-               (prn "c1=" children1)
-               (prn "c2=" children2)
-               [[root (vec (concat children1 children2))]]
-               )
-             (vec (conj tree dir))))))
-     []
-     directories)
-    )
-
-  (build-tree2 #_["src" ["clj" ["add.clj"]]]
-               ["src" ["agit.cljc"]]
-               ["src" ["foo.cljc"]]
-               ["src" ["bar.cljc"]]
-               )
-
-  (build-tree2 ["src" [["clj" ["agit.cljc" "test.cljc"]]]]
-               ;;["src" [["clj" ["foo.cljc"]]]]
-               ["src" [["clj" ["bar.cljc"]]]]
-               )
 
   (combine ["clj" ["agit.cljc" "test.cljc"]]
            ["clj" ["bar.cljc"]])
@@ -751,19 +735,6 @@
 
   (combine ["clj" ["agit.cljc" "test.cljc"]]
            ["clj" ["bar.cljc"]])
-  [
-   ["src" [["clj" ["agit.cljc" "foo.cljc" "bar.cljc"]]]]
-
-   ]
-  
-  [
-   ["src"
-    [["clj" ["agit.cljc" "test.cljc"]]
-     ["clj" ["bar.cljc"]]]
-    ]
-
-   ]
-  
 
   )
 
