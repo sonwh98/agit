@@ -634,9 +634,30 @@
   
   (build-tree ["src" ["clj" ["add.clj"]]]
               ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
-
+              
               )
 
+  (build-tree ["src" [["clj" ["add.clj"]]
+                      ["cljc" ["stigmergy" ["agit.cljc"]]]]]
+              ["src" [
+                      ["cljc" ["stigmergy" ["foo.cljc"]]]]]
+              )
+
+  ["src" [ [["clj" ["add.clj"]]
+            ["cljc" ["stigmergy" ["agit.cljc"]]]]
+          [["cljc" ["stigmergy" ["foo.cljc"]]]]
+
+          ]
+   ]
+  
+  (build-tree  [["src" [["clj" ["add.clj"]] ["cljc" ["stigmergy" ["agit.cljc"]]]]]
+                ["test" ["lambda.jpg"]]
+                ]
+               ["test2" ["lambda.jpg"]]
+               )
+
+
+  
   (defn build-forest [dirs]
     (reduce (fn [acc dir]
             (let [[parent children] dir
@@ -654,12 +675,15 @@
   (build-forest [["src" ["clj" ["add.clj"]]]
                  ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
                  ["test" ["lambda.jpg"]]
+                 ["test2" ["lambda2.jpg"]]
                  ])
 
   [["src" [["clj" ["add.clj"]]
            ["cljc" ["stigmergy" ["agit.cljc"]]]]]
    ["test" ["lambda.jpg"]]]
 
+
+  
   (reduce (fn [acc dir]
             (let [[parent children] dir
                   found (first (filter (fn [[p c]]
@@ -678,8 +702,50 @@
           )
 
   (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
+
+  (defn build-tree2 [& directories]
+    (reduce
+     (fn [tree dir]
+       (prn "tree=" tree)
+       (prn "dir=" dir)
+       (if (empty? tree)
+         [dir]
+         (let [[root children] (first (filter (fn [[parent children]]
+                                                (= parent (first dir)))
+                                              tree))]
+           (prn "root=" root)
+           (if root
+             (let [children1 (first children)
+                   children2 (second dir)
+                   children2 (first children2)]
+               (prn "c1=" children1)
+               (prn "c2=" children2)
+               (if (sequential? children1)
+                 [root [(build-tree2  children1 children2)]]
+                 [root (build-tree2  children1 children2)]))
+             (vec (conj tree dir))))))
+     []
+     directories)
+    )
+
+  (build-tree2 #_["src" ["clj" ["add.clj"]]]
+               ["src" ["agit.cljc"]]
+               ["src" ["foo.cljc"]]
+               
+               )
+
+  (build-tree2 ["src" [["clj" ["agit.cljc"]]]]
+               ["src" [["clj" ["foo.cljc"]]]]
+               ;;["src" [["clj" ["bar.cljc"]]]]
+               )
+
+  [
+   ["src" [["clj" ["agit.cljc" "foo.cljc" "bar.cljc"]]]]
+
+   ]
   
 
+  [["src" [["clj" ["agit.cljc" "foo.cljc"]]]]]
   )
 
 
