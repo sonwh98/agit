@@ -441,6 +441,36 @@
                        (dissoc :name))]
     tree-entry))
 
+(defn collapse-dirs [dirs-group-by-parent]
+  (reduce (fn [acc [parent dirs]]
+            (if (empty? acc)
+              [parent (vec (mapcat second dirs))]
+              (mapv vec (partition 2 (concat acc [parent (vec (mapcat second dirs))])))))
+          []
+          dirs-group-by-parent))
+
+(comment
+  (collapse-dirs (vals (group-by first [["clj" ["agit.cljc" "test.cljc"]]
+                                        ["clj" ["bar.cljc"]]
+                                        ["clj" ["foo.cljs"]]
+                                        ["js" ["hello.js"]]]
+                                 )))
+
+  (def g (group-by first [
+                          ["clj" ["agit.cljc" "test.cljc"]]
+                          ["clj" ["bar.cljc"]]
+                          ["clj" ["foo.cljs"]]
+                          ["js" ["hello.js" "world.js"]]]
+                   ))
+
+  (collapse-dirs g)
+
+  ["clj" ("agit.cljc" "test.cljc" "bar.cljc" "foo.cljs")
+   ["js" ("hello.js")]
+
+   ]
+  )
+
 (defn build-dir [paths]
   (if (= 2 (count paths))
     (let [[parent child] paths]
@@ -738,19 +768,15 @@
       (let [dirs1 (filter dir? path1)
             dirs2 (filter dir? path2)
             dirs (concat dirs1 dirs2)
-            dirs-map (group-by (fn [dir]
-                                 (first dir))
-                               dirs)
-            foo (vals dirs-map)]
-        
+            dirs (collapse-dirs (first (vals (group-by first dirs))))
 
+            files1 (filter string? path1)
+            files2 (filter string? path2)]
+        (vec (concat dirs files1 files2))
         )
       )
     )
   
-
-  (vals {:a 1 :b 2})
-
   (dir? [["clj" ["agit.cljc" "test.cljc"]]])
   (dir? ["src" [["clj" ["agit.cljc" "test.cljc"]]
                 ["js" ["hello.js" "c.cljs"]]]])
@@ -759,35 +785,13 @@
            ["clj" ["bar.cljc"]])
 
   (combine ["src" [["clj" ["agit.cljc" "test.cljc"]]]]
-           ["src" [["clj" ["bar.cljc"]]]])
+           ["src" [["clj" ["bar.cljc"]]
+                   ["js" ["hello.js"]]]])
 
 
 
-  (filter vector? ["clj" ["agit.cljc" "test.cljc"]])
-  (group-by (fn [dir]
-             (first dir))
-           '(["clj" ["agit.cljc" "test.cljc"]]
-             ["clj" ["bar.cljc"]]))
 
-  (mapcat (fn [[k v]]
-            v)
-          [["clj" ["agit.cljc" "test.cljc"]] ["clj" ["bar.cljc"]]])
-
-
-  (defn collapse-dirs [dirs-group-by-parent]
-    (reduce (fn [acc dir]
-              (if (empty? acc)
-                dir
-                (let [[parent children] acc]
-                  [parent (into children (second dir))]
-                  )))
-            []
-            dirs-group-by-parent))
-
-  (collapse-dirs (first (vals (group-by first [["clj" ["agit.cljc" "test.cljc"]]
-                                               ["clj" ["bar.cljc"]]
-                                               ["clj" ["foo.cljs"]]
-                                               ]))))
+  
 
 
 
