@@ -448,6 +448,10 @@
     (let [parent (first paths)]
       [parent (build-dir (rest paths))])))
 
+(comment
+  (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
+  )
+
 (defn get-tree-entries-in-snapshot [project-root]
   (let [{:keys [new modified no-change]} (status project-root)
         index-entries (concat new modified no-change)
@@ -650,7 +654,7 @@
           ]
    ]
   
-  (build-tree  [["src" [["clj" ["add.clj"]] ["cljc" ["stigmergy" ["agit.cljc"]]]]]
+  (build-tree  [ ["src" [["clj" ["add.clj"]] ["cljc" ["stigmergy" ["agit.cljc"]]]]]
                 ["test" ["lambda.jpg"]]
                 ]
                ["test2" ["lambda.jpg"]]
@@ -701,40 +705,92 @@
            ]
           )
 
-  (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
 
+  (defn dir? [path]
+    (and (vector? path)
+         (= 2 (count path))
+         (let [children (second path)]
+           (vector? children))))
+  
   (defn combine [path1 path2]
     (prn "path1=" path1)
     (prn "path2=" path2)
-    (let [parent1 (first path1)
-          children1 (second path1)
-          parent2 (first path2)
-          children2 (second path2)]
-      (cond
-        (= parent1 parent2) [parent1 (combine children1 children2)]
-        (and (every? string? path1)
-             (every? string? path2)) (do
-                                       (prn "foo1 " path1)
-                                       (prn "foo2 " path2)
-                                       (vec (concat path1 path2)))
+    (if (and (dir? path1) (dir? path2))
+      (let [parent1 (first path1)
+            children1 (second path1)
+            dirs1 (filter vector? children1)
+            files1 (filter string? children1)
+            
+            parent2 (first path2)
+            children2 (second path2)
+            dirs2 (filter vector? children2)
+            files2 (filter string? children2)]
+        (cond
+          (= parent1 parent2) [parent1 (combine children1 children2)]
+          (and (every? string? path1)
+               (every? string? path2)) (do
+                                         (vec (concat path1 path2)))
+          
+          :else (let [dirs1 (first (filter vector? path1))
+                      dirs2 (first (filter vector? path2))]
+                  (combine dirs1 dirs2) 
+                  )))
+      (let [dirs1 (filter dir? path1)
+            dirs2 (filter dir? path2)
+            dirs (concat dirs1 dirs2)
+            dirs-map (group-by (fn [dir]
+                                 (first dir))
+                               dirs)
+            foo (vals dirs-map)]
         
-        :else (let [dir1 (first (filter vector? path1))
-                    dir2 (first (filter vector? path2))]
-                (prn "dir1=" dir1)
-                (prn "dir2=" dir2)
-                (combine dir1 dir2) 
-                )))
+
+        )
+      )
     )
   
 
+  (vals {:a 1 :b 2})
+
+  (dir? [["clj" ["agit.cljc" "test.cljc"]]])
+  (dir? ["src" [["clj" ["agit.cljc" "test.cljc"]]
+                ["js" ["hello.js" "c.cljs"]]]])
+  
   (combine ["clj" ["agit.cljc" "test.cljc"]]
            ["clj" ["bar.cljc"]])
 
   (combine ["src" [["clj" ["agit.cljc" "test.cljc"]]]]
            ["src" [["clj" ["bar.cljc"]]]])
 
-  (combine ["clj" ["agit.cljc" "test.cljc"]]
-           ["clj" ["bar.cljc"]])
+
+
+  (filter vector? ["clj" ["agit.cljc" "test.cljc"]])
+  (group-by (fn [dir]
+             (first dir))
+           '(["clj" ["agit.cljc" "test.cljc"]]
+             ["clj" ["bar.cljc"]]))
+
+  (mapcat (fn [[k v]]
+            v)
+          [["clj" ["agit.cljc" "test.cljc"]] ["clj" ["bar.cljc"]]])
+
+
+  (defn collapse-dirs [dirs-group-by-parent]
+    (reduce (fn [acc dir]
+              (if (empty? acc)
+                dir
+                (let [[parent children] acc]
+                  [parent (into children (second dir))]
+                  )))
+            []
+            dirs-group-by-parent))
+
+  (collapse-dirs (first (vals (group-by first [["clj" ["agit.cljc" "test.cljc"]]
+                                               ["clj" ["bar.cljc"]]
+                                               ["clj" ["foo.cljs"]]
+                                               ]))))
+
+
+
 
   )
 
