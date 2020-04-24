@@ -441,13 +441,14 @@
                        (dissoc :name))]
     tree-entry))
 
-(defn collapse-dirs [dirs-group-by-parent]
-  (reduce (fn [acc [parent dirs]]
-            (if (empty? acc)
-              [parent (vec (mapcat second dirs))]
-              (mapv vec (partition 2 (concat acc [parent (vec (mapcat second dirs))])))))
-          []
-          dirs-group-by-parent))
+(defn collapse-dirs [dir-tree]
+  (let [dirs-group-by-parent (group-by first dir-tree)]
+    (reduce (fn [acc [parent dirs]]
+              (if (empty? acc)
+                [parent (vec (mapcat second dirs))]
+                (mapv vec (partition 2 (concat acc [parent (vec (mapcat second dirs))])))))
+            []
+            dirs-group-by-parent)))
 
 (comment
   (collapse-dirs (vals (group-by first [["clj" ["agit.cljc" "test.cljc"]]
@@ -464,11 +465,21 @@
                    ))
 
   (collapse-dirs g)
+  (collapse-dirs [["clj" ["agit.cljc" "test.cljc"]]
+                  ["clj" ["bar.cljc"]]
+                  ["clj" ["foo.cljs"]]
+                  ["js" ["hello.js" "world.js"]]])
 
-  ["clj" ("agit.cljc" "test.cljc" "bar.cljc" "foo.cljs")
-   ["js" ("hello.js")]
+  (collapse-dirs [["src" ["clj" ["agit.cljc" "test.cljc"]]]
+                  ["src" ["clj" ["bar.cljc"]]]
+                  ["src" ["clj" ["foo.cljs"]]]
+                  ["src" ["js" ["hello.js" "world.js"]]]])
 
-   ]
+  (def g (group-by first [["src" ["clj" ["agit.cljc" "test.cljc"]]]
+                          ["src" ["clj" ["bar.cljc"]]]
+                          ["src" ["clj" ["foo.cljs"]]]
+                          ["src" ["js" ["hello.js" "world.js"]]]]))
+  
   )
 
 (defn build-dir [paths]
