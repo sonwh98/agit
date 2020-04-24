@@ -707,11 +707,11 @@
     (prn "path1=" path1)
     (prn "path2=" path2)
     (let [parent1 (first path1)
-          parent2 (first path2)]
+          children1 (second path1)
+          parent2 (first path2)
+          children2 (second path2)]
       (cond
-        (= parent1 parent2) (let [children1 (second path1)
-                                  children2 (second path2)]
-                              [parent1 (combine children1 children2)])
+        (= parent1 parent2) [parent1 (combine children1 children2)]
         (and (every? string? path1)
              (every? string? path2)) (do
                                        (prn "foo1 " path1)
