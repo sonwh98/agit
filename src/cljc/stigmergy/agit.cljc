@@ -728,25 +728,73 @@
    ["test" ["lambda.jpg"]]]
 
 
+  (defn path-helper [path tree [parent children :as dir]]
+    (prn "path=" path)
+    (if (empty? path)
+      (let [parents (map first tree)
+            i (.indexOf parents parent)]
+        (prn "i=" i)
+        (if (>= i 0)
+          (path-helper (conj path i) tree children)
+          path))
+      (let [next (get-in tree path)]
+        (prn "next=" next)
+        path
+        )
+      )
+    )
   
-  (reduce (fn [acc dir]
-            (let [[parent children] dir
-                  found (first (filter (fn [[p c]]
-                                         (= p parent))
-                                       acc))]
-              (cond
-                found (let [[p c] found]
-                        [p (build-tree c children)])
-                :else (let [[p c] (build-tree dir nil)]
-                        (conj [acc] (build-tree dir nil))))))
+  (defn get-path [tree dir]
+    (path-helper [] tree dir))
+  
+  (get-path [["resources" ["abc.txt"]]
+             ["resources" ["123.txt"]]]
+            ["resources" ["123abc.txt"]]
+            )
+
+  (tree-seq seq? identity '((1 2 (3)) (4)))
+  (tree-seq seq? identity [["resources" ["abc.txt"]]
+                           ["resources" ["123.txt"]]])
+
+  (tree-seq next rest '(:A (:B (:D) (:E)) (:C (:F))))
+
+  (defn branch? [node]
+    (and (vector? node)
+                   (= 2 (count node))
+                   (let [[dir children] node]
+                     (and (string? dir) (vector? children)))))
+  
+  (tree-seq branch?
+            second
+            ["root" [["src" [["clj" ["agit.clj" "test.clj"]]
+                             ["cljc" ["util.cljc" "foo.cljc"]]]]
+                     ["resources" [["public" [["js" ["app.js" "util.js"]]
+                                              ["html" ["hello.html" "header.html"]]]]
+                                   ["config" ["server.yaml" "client.yaml"]]
+                                   
+                                   ]]
+                     ]])
+
+  
+  (reduce (fn [tree dir]
+            (cond
+              (empty? tree) [dir]
+              
+              :else (let [subtree (get-subtree tree dir)]
+                      
+                      (conj tree dir))
+              )
+            )
           []
-          [["src" ["clj" ["add.clj"]]]
-           ["src" ["cljc" ["stigmergy" ["agit.cljc"]]]]
-           ["test" ["lambda.jpg"]]
+          [["resources" ["abc.txt"]]
+           ["resources" ["123.txt"]]
+           
            ]
           )
 
+  (get-in [["clj" ["agit.cljc" "test.cljc"]]] [0 1 0])
 
+  
   (defn dir? [path]
     (and (vector? path)
          (= 2 (count path))
