@@ -730,16 +730,25 @@
 
   (defn path-helper [path tree [parent children :as dir]]
     (prn "path=" path)
+    (prn "tree=" tree)
+    (prn "dir=" dir)
     (if (empty? path)
       (let [parents (map first tree)
             i (.indexOf parents parent)]
         (prn "i=" i)
         (if (>= i 0)
-          (path-helper (conj path i) tree children)
+          (let [path (conj path i)]
+            (path-helper path (get-in tree path) dir))
           path))
-      (let [next (get-in tree path)]
-        (prn "next=" next)
-        path
+      (let [[p1 c1] tree
+            [p2 c2] dir]
+        (if (= p1 p2)
+          (let [path (conj path 1)]
+            (prn "path2=" path)
+            (path-helper path (get-in tree path) (get-in dir path) ))
+          path
+          )
+
         )
       )
     )
@@ -747,17 +756,19 @@
   (defn get-path [tree dir]
     (path-helper [] tree dir))
   
-  (get-path [["resources" ["abc.txt"]]
-             ["resources" ["123.txt"]]]
-            ["resources" ["123abc.txt"]]
+  (get-path [["src" [["clj" ["foo.clj"]]]]]
+
+            ["src" [["clj" ["bar.clj"]]]]
             )
 
-  (tree-seq seq? identity '((1 2 (3)) (4)))
-  (tree-seq seq? identity [["resources" ["abc.txt"]]
-                           ["resources" ["123.txt"]]])
+  (get-in [["src" [["clj" ["foo.clj"]]]]]
+          [0 0]
+          )
 
-  (tree-seq next rest '(:A (:B (:D) (:E)) (:C (:F))))
-
+  (get-in ["src" [["clj" ["foo.clj"]]]]
+          [1]
+          )
+  
   (defn branch? [node]
     (and (vector? node)
                    (= 2 (count node))
@@ -775,23 +786,33 @@
                                    ]]
                      ]])
 
-  
-  (reduce (fn [tree dir]
-            (cond
-              (empty? tree) [dir]
-              
-              :else (let [subtree (get-subtree tree dir)]
-                      
-                      (conj tree dir))
-              )
-            )
-          []
-          [["resources" ["abc.txt"]]
-           ["resources" ["123.txt"]]
-           
-           ]
-          )
 
+  (defn get-subtree [tree dir]
+    ["resources" ["abc.txt"]]
+    )
+
+  (defn combine2 [dirs]
+    (reduce (fn [tree dir]
+              (prn "tree=" tree " dir=" dir)
+              (cond
+                (empty? tree) dir
+                
+                :else (let [[p c] tree
+                            [p2 c2] dir]
+                        (prn "p=" p " c=" c)
+                        (prn "p2=" p2 " c2=" c2)
+                        (if (= p p2)
+                          [p (into c c2)])
+                        )
+                )
+              )
+            []
+            dirs))
+
+  (combine2 [["resources" ["abc.txt"]]
+             ["resources" ["123.txt" "45.txt"]]
+             ])
+  
   (get-in [["clj" ["agit.cljc" "test.cljc"]]] [0 1 0])
 
   
