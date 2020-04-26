@@ -795,32 +795,38 @@
         [["clj" ["123.clj"]]])
 
   (defn combine2 [dirs]
-    (if (every? string? dirs)
-      dirs
-      (reduce (fn [tree dir]
-                (prn "tree=" tree " dir=" dir)
-                (cond
-                  (empty? tree) dir
-                  
-                  :else (let [[p c] tree
-                              [p2 c2] dir]
-                          (prn "p=" p " c=" c)
-                          (prn "p2=" p2 " c2=" c2)
-                          (if (= p p2)
-                            ;;[p (combine2 (into c c2))]
-                            [p (combine2 (into c c2))]
-                            ;;[p (into c c2)]
-                            (do
-                              ;; (prn "tree=" tree)
-                              ;; (prn "dir=" dir)
-                              (into [tree] dir)
-                              )
-                            )
-                          )
-                  )
-                )
-              []
-              dirs)))
+    (let [files (vec (filter string? dirs))
+          directories (vec (filter vector? dirs))]
+      (prn "dirs=" dirs)
+      (prn "files=" files)
+      (prn "directories=" directories)
+      (into files
+               (reduce (fn [tree dir]
+                         (prn "tree=" tree " dir=" dir)
+                         (cond
+                           (empty? tree) dir
+                        
+                           :else (let [[p c] tree
+                                       [p2 c2] dir]
+                                   (prn "p=" p " c=" c)
+                                   (prn "p2=" p2 " c2=" c2)
+                                   (if (= p p2)
+                                     ;;[p (combine2 (into c c2))]
+                                     [p (combine2 (into c c2))]
+                                     ;;[p (into c c2)]
+                                     (do
+                                       ;; (prn "tree=" tree)
+                                       ;; (prn "dir=" dir)
+                                       (into [tree] dir)
+                                       )
+                                     )
+                                   )
+                           )
+                         )
+                       []
+                       directories))
+      )
+    )
 
   (combine2 [
              ["src" [["clj" ["abc.clj"]]]]
@@ -832,9 +838,11 @@
 
   (combine2 [
              ["clj" ["abc.clj"]]
-             ["clj" ["123.clj" "foo.txt"]]
+             ["clj" ["123.clj"]]
              ])
 
+
+  
   (combine2 [["clj" ["abc.clj"]]
              ["clj" ["123.clj" ["util" ["foo.clj"]]]]])
 
