@@ -808,7 +808,7 @@
                           (prn "p2=" p2 " c2=" c2)
                           (if (= p p2)
                             ;;[p (combine2 (into c c2))]
-                            [p [(combine2 (into c c2))]]
+                            [p (combine2 (into c c2))]
                             ;;[p (into c c2)]
                             (do
                               ;; (prn "tree=" tree)
@@ -830,29 +830,18 @@
              ;;["resources" [["public" [["html" ["header.html"]]]]]]
              ])
 
-  (into [["clj" ["abc.clj"]]]
-        [["clj" ["123.clj" "foo.txt"]]])
   (combine2 [
              ["clj" ["abc.clj"]]
              ["clj" ["123.clj" "foo.txt"]]
              ])
 
   (combine2 [["clj" ["abc.clj"]]
-             ["clj" ["123.clj"]]])
+             ["clj" ["123.clj" ["util" ["foo.clj"]]]]])
 
-  (combine2  ["abc.clj" "123.clj"])
+  (into ["abc.clj"] ["123.clj" ["util" ["foo.clj"]]])
 
-  (combine2 [["abc.clj"]
-             ["123.clj" "foo.txt"]]
-            )
+  (combine2 (into ["abc.clj"] ["123.clj" ["util" ["foo.clj"]]]));; TODO this is the case i need to handle
   
-  (combine2 (into [["clj" ["abc.clj"]]]
-                  [["clj" ["123.clj"]]]))
-
-  ["src" ["clj" ["abc.clj" "123.clj"]]]
-  
-  (get-in [["clj" ["agit.cljc" "test.cljc"]]] [0 1 0])
-
   
   (defn dir? [path]
     (and (vector? path)
