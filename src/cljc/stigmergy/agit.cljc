@@ -830,18 +830,19 @@
 
   (combine2 [
              ["src" [["clj" ["abc.clj"]]]]
-             ["src" [["clj" ["123.clj" "foo.txt"]]]]
+             ["src" [["clj" ["123.clj" ["util" ["foo.txt"]]]]]]
+
              ;;["src" [["clj" ["hello.clj" "hi.clj"]]]]
              ;; ["src" [["clj" ["foo.clj" "bar.clj"]]]]
              ;;["resources" [["public" [["html" ["header.html"]]]]]]
              ])
 
   (combine2 [
-             ["clj" ["abc.clj"]]
-             ["clj" ["123.clj"]]
+             ["abc.clj"]
+             ["123.clj" ["util" ["foo.txt"]]]
              ])
 
-
+  ["abc.clj" "123.clj" ["util" ["foo.txt"]]]
   
   (combine2 [["clj" ["abc.clj"]]
              ["clj" ["123.clj" ["util" ["foo.clj"]]]]])
