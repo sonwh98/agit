@@ -791,27 +791,65 @@
     ["resources" ["abc.txt"]]
     )
 
-  (defn combine2 [dirs]
-    (reduce (fn [tree dir]
-              (prn "tree=" tree " dir=" dir)
-              (cond
-                (empty? tree) dir
-                
-                :else (let [[p c] tree
-                            [p2 c2] dir]
-                        (prn "p=" p " c=" c)
-                        (prn "p2=" p2 " c2=" c2)
-                        (if (= p p2)
-                          [p (into c c2)])
-                        )
-                )
-              )
-            []
-            dirs))
+  (into [["clj" ["abc.clj"]]]
+        [["clj" ["123.clj"]]])
 
-  (combine2 [["resources" ["abc.txt"]]
-             ["resources" ["123.txt" "45.txt"]]
+  (defn combine2 [dirs]
+    (if (every? string? dirs)
+      dirs
+      (reduce (fn [tree dir]
+                (prn "tree=" tree " dir=" dir)
+                (cond
+                  (empty? tree) dir
+                  
+                  :else (let [[p c] tree
+                              [p2 c2] dir]
+                          (prn "p=" p " c=" c)
+                          (prn "p2=" p2 " c2=" c2)
+                          (if (= p p2)
+                            ;;[p (combine2 (into c c2))]
+                            [p [(combine2 (into c c2))]]
+                            ;;[p (into c c2)]
+                            (do
+                              ;; (prn "tree=" tree)
+                              ;; (prn "dir=" dir)
+                              (into [tree] dir)
+                              )
+                            )
+                          )
+                  )
+                )
+              []
+              dirs)))
+
+  (combine2 [
+             ["src" [["clj" ["abc.clj"]]]]
+             ["src" [["clj" ["123.clj" "foo.txt"]]]]
+             ;;["src" [["clj" ["hello.clj" "hi.clj"]]]]
+             ;; ["src" [["clj" ["foo.clj" "bar.clj"]]]]
+             ;;["resources" [["public" [["html" ["header.html"]]]]]]
              ])
+
+  (into [["clj" ["abc.clj"]]]
+        [["clj" ["123.clj" "foo.txt"]]])
+  (combine2 [
+             ["clj" ["abc.clj"]]
+             ["clj" ["123.clj" "foo.txt"]]
+             ])
+
+  (combine2 [["clj" ["abc.clj"]]
+             ["clj" ["123.clj"]]])
+
+  (combine2  ["abc.clj" "123.clj"])
+
+  (combine2 [["abc.clj"]
+             ["123.clj" "foo.txt"]]
+            )
+  
+  (combine2 (into [["clj" ["abc.clj"]]]
+                  [["clj" ["123.clj"]]]))
+
+  ["src" ["clj" ["abc.clj" "123.clj"]]]
   
   (get-in [["clj" ["agit.cljc" "test.cljc"]]] [0 1 0])
 
