@@ -506,12 +506,8 @@
   )
 
 (defn get-tree-entries-in-snapshot [project-root]
-  (let [index (parse-git-index (str project-root "/.git/index"))
-        index-entries (:entries index)
-        ;;{:keys [new modified no-change]} (status project-root)
-        ;;index-entries (concat new modified no-change)        
-        tree-entries (map index-entry->tree-entry  index-entries)]
-    tree-entries))
+  (let [index (parse-git-index (str project-root "/.git/index"))]
+    (map index-entry->tree-entry (:entries index))))
 
 (defn tree-snapshot [project-root]
   (let [
@@ -629,10 +625,11 @@
   (parse-tree-object project-root "d3a17365deab73f0409e25868bf9643f44f85dab");;agit.cljc
   (parse-tree-object project-root "f7adef825635430158f301630b0845869f61dd44");;stigmergy
   (parse-tree-object project-root "8bb8177731e14225fbcd14bb0ec99d7fb9392e46") ;;cljc
-  (parse-tree-object project-root "3c5c5bc974e6943045d116b487a1de40836d3b43") ;;commit
   (parse-tree-object project-root "a672dea289281cfda525e228eb5750cbc932b6cf") ;;src
-  (parse-blob-object project-root "9ea856d4823304e8f743fcab5920e708692ef6ce")
+  (parse-blob-object project-root "9ea856d4823304e8f743fcab5920e708692ef6ce") ;;blob agit.cljc
+  (parse-tree-object project-root "3c5c5bc974e6943045d116b487a1de40836d3b43") ;;commit
 
+  (hash-tree (get-tree-entries-in-snapshot project-root))
   
   (-> (cat-file project-root "d3a17365deab73f0409e25868bf9643f44f85dab" ;;"9ea856d4823304e8f743fcab5920e708692ef6ce"
                 )
@@ -695,6 +692,9 @@
     )
 
   (get-tree-entries-in-snapshot project-root)
+
+
+
   
   (defn branch? [node]
     (and (vector? node)
