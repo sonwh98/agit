@@ -1,5 +1,6 @@
 (ns stigmergy.agit
   (:require [clojure.pprint :refer :all]
+            [clojure.set]
             [stigmergy.io :as io]
             [stigmergy.node :as n]
             [stigmergy.tily :as util]
@@ -442,14 +443,7 @@
 
 (defn index-entry->tree-entry [index-entry]
   (let [tree-entry (select-keys index-entry [:mode :name :sha1])
-        node (let [path-name (:name index-entry)]
-               (prn "path-name=" path-name)
-               (-> path-name n/str->path n/path->node))
-        _ (prn "node=" node)
-        path (-> node n/node->path n/path->str)
-        tree-entry (-> tree-entry
-                       (assoc :path path)
-                       (dissoc :name))]
+        tree-entry (clojure.set/rename-keys tree-entry {:name :path})]
     tree-entry))
 
 (defn collapse-dirs [dir-tree]
@@ -653,8 +647,11 @@
 
   (hash-tree [{:mode "40000",
                :path "stigmergy",
-               :sha1 "d3a17365deab73f0409e25868bf9643f44f85dab"}]
-             )
+               :sha1 "d3a17365deab73f0409e25868bf9643f44f85dab"}])
+
+  (hash-tree [{:mode "40000",
+               :path "cljc",
+               :sha1 "f7adef825635430158f301630b0845869f61dd44"}])
   
   (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
                                         (let [mode-path (vd/str->seq (str mode " " path))
