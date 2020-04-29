@@ -12,7 +12,7 @@
 (defn root? [node]
   (-> node :parent nil?))
 
-(defn ->path [f]
+(defn str->path [f]
   (let [path (clojure.string/split f #"/")]
     (if (-> path first str/blank?)
       (-> path rest vec)
@@ -71,7 +71,7 @@
               (let [n2 (assoc n :parent parent-path)]
                 n2)))))
 
-(defn ->node [paths]
+(defn path->node [paths]
   (->node-helper paths paths {}))
 
 (clojure.set/intersection #{1 2} #{2 3})
@@ -122,9 +122,9 @@
   (def files ["/scramblies/resources/public/index.html" "/scramblies/src/clj/scramblies/core.clj" "/scramblies/src/clj/scramblies/server.clj" "/scramblies/src/clj/user.clj" "/scramblies/src/cljs/scramblies/core.cljs" "/scramblies/test/scramblies/tests.clj" "/scramblies/README.md" "/scramblies/project.clj"])
 
   (-> "scramblies/src/cljs/scramblies/core.cljs"
-      ->path #_->node)
+      str->path path->node)
 
   (def nodes (mapv (fn [n]
-                     (-> n ->path ->node)) files))
+                     (-> n str->path path->node)) files))
   (reduce join-node nodes)
   )

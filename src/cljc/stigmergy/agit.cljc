@@ -435,10 +435,14 @@
 
 (defn index-entry->tree-entry [index-entry]
   (let [tree-entry (select-keys index-entry [:mode :name :sha1])
+        node (let [path-name (:name index-entry)]
+               (-> path-name n/str->path n/path->node))
+        _ (prn "node=" node)
         path (first (clojure.string/split (:name tree-entry) #"/"))
         tree-entry (-> tree-entry
                        (assoc :path path)
                        (dissoc :name))]
+    (prn "tree-entry=" tree-entry)
     tree-entry))
 
 (defn collapse-dirs [dir-tree]
@@ -491,16 +495,18 @@
 
 (comment
   (build-dir ["src" "cljc" "stigmergy" "agit.cljc"])
+  [{"src" [{"clj" [{:file/name "add.clj", :parent ["src" "clj"]}],
+            :parent ["src"]}]}
+   {"src" [{"cljc" [{"stigmergy"
+                     [{:file/name "agit.cljc",
+                       :parent ["src" "cljc" "stigmergy"]}],
+                     :parent ["src" "cljc"]}],
+            :parent ["src"]}]}]
   )
 
 (defn get-tree-entries-in-snapshot [project-root]
   (let [{:keys [new modified no-change]} (status project-root)
-        index-entries (concat new modified no-change)
-        paths (map (fn [index-entry]
-                     (clojure.string/split (:name index-entry) #"/" ))
-                   index-entries)
-        dirs (map #(build-dir %) paths)
-        _ (prn "dirs=" dirs)
+        index-entries (concat new modified no-change)        
         tree-entries (map index-entry->tree-entry  index-entries)]
     tree-entries))
 
@@ -597,7 +603,7 @@
       vd/seq->char-seq
       vd/char-seq->str
       )
-  (map n/->path ["/src/foo.bar"])
+  (map n/str->path ["/src/foo.bar"])
   (parse-tree-object project-root "a672dea289281cfda525e228eb5750cbc932b6cf")
   (parse-tree-object project-root "8bb8177731e14225fbcd14bb0ec99d7fb9392e46")
   (parse-tree-object project-root "f7adef825635430158f301630b0845869f61dd44")
