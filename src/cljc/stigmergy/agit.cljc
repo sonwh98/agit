@@ -520,30 +520,28 @@
         sha1-hex-str (hash-object "tree" tree-seq)]
     [sha1-hex-str tree-seq]))
 
+(defn merkel-chain [tree-entries]
+  (map (fn [tree-entry]
+         (let [mode (:mode tree-entry)
+               sha1 (:sha1 tree-entry)
+               paths (-> tree-entry :path n/str->path reverse)]
+           (reduce (fn [acc path]
+                     (let [previous-node (last acc)]
+                       (if previous-node
+                         (conj acc {:mode "40000"
+                                    :path path
+                                    :sha1 (hash-tree [previous-node])})
+                         (conj acc {:mode mode
+                                    :path path
+                                    :sha1 sha1}))))
+                   []
+                   paths)))
+       tree-entries))
+
 (comment
   (let [tree-entries (get-tree-entries-in-snapshot project-root)
-        tree-entries (map (fn [tree-entry]
-                            (let [mode (:mode tree-entry)
-                                  sha1 (:sha1 tree-entry)
-                                  paths (-> tree-entry :path n/str->path reverse)]
-                              (reduce (fn [acc path]
-                                        (let [previous-node (last acc)]
-                                          (prn "prev=" previous-node)
-                                          (if previous-node
-                                            (conj acc {:mode "40000"
-                                                       :path path
-                                                       :sha1 (hash-tree [previous-node])})
-                                            (conj acc {:mode mode
-                                                       :path path
-                                                       :sha1 sha1})
-                                            )))
-                                      []
-                                      paths)
-                              )
-                            )
-                          tree-entries)]
-    tree-entries
-    )
+        merkel-hash-chain (merkel-chain tree-entries)]
+    merkel-hash-chain)
 
   )
 
