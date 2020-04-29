@@ -88,6 +88,13 @@
                size))
     content))
 
+(defn hash-tree [tree-entries]
+  (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
+                                      (let [mode-path (vd/str->seq (str mode " " path))
+                                            sha1-binary (vd/hex->seq sha1)]
+                                        (concat mode-path [0] sha1-binary)))
+                                    tree-entries))))
+
 (defn write-blob
   "write blob to .git/objects return the sha1 hash of blob"
   [project-root content]
@@ -436,13 +443,13 @@
 (defn index-entry->tree-entry [index-entry]
   (let [tree-entry (select-keys index-entry [:mode :name :sha1])
         node (let [path-name (:name index-entry)]
+               (prn "path-name=" path-name)
                (-> path-name n/str->path n/path->node))
         _ (prn "node=" node)
-        path (first (clojure.string/split (:name tree-entry) #"/"))
+        path (-> node n/node->path n/path->str)
         tree-entry (-> tree-entry
                        (assoc :path path)
                        (dissoc :name))]
-    (prn "tree-entry=" tree-entry)
     tree-entry))
 
 (defn collapse-dirs [dir-tree]
@@ -505,13 +512,17 @@
   )
 
 (defn get-tree-entries-in-snapshot [project-root]
-  (let [{:keys [new modified no-change]} (status project-root)
-        index-entries (concat new modified no-change)        
+  (let [index (parse-git-index (str project-root "/.git/index"))
+        index-entries (:entries index)
+        ;;{:keys [new modified no-change]} (status project-root)
+        ;;index-entries (concat new modified no-change)        
         tree-entries (map index-entry->tree-entry  index-entries)]
     tree-entries))
 
 (defn tree-snapshot [project-root]
-  (let [tree-entries (get-tree-entries-in-snapshot project-root)
+  (let [
+        
+        tree-entries (get-tree-entries-in-snapshot project-root)
         tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
@@ -566,18 +577,28 @@
   
   (def index (add project-root
                   "project.clj"))
+  
   (commit {:project-root project-root
            :message "1"})
   
   (def index (add project-root
-                  "io.cljc"
-                  "parse_git_index.c"))
+                  "io.cljc"))
 
-  (def index (add project-root
-                  "src/cljc/stigmergy/agit.cljc"))
-  
   (commit {:project-root project-root
            :message "2"})
+    
+  (def index (add project-root
+                  "parse_git_index.c"))
+    
+  (commit {:project-root project-root
+           :message "3"})
+  
+  (def index (add project-root
+                  "src/cljc/stigmergy/agit.cljc"))
+
+  (def index (add project-root
+                  "src/clj/add.clj"))
+
 
   (commit-map {:project-root project-root
                :message "3"})
@@ -611,10 +632,29 @@
   (parse-blob-object project-root "9ea856d4823304e8f743fcab5920e708692ef6ce")
   
   ;;;
-  (parse-tree-object project-root "592de38f0fa477264639cb6aa0c699942877f3c6")
-  (parse-tree-object project-root "1abeaa9c97b958ff98ffd6eb734ccef7428a65c3")
+  (parse-tree-object project-root "d3a17365deab73f0409e25868bf9643f44f85dab");;agit.cljc
+  (parse-tree-object project-root "f7adef825635430158f301630b0845869f61dd44");;stigmergy
+  (parse-tree-object project-root "8bb8177731e14225fbcd14bb0ec99d7fb9392e46") ;;cljc
+  (parse-tree-object project-root "3c5c5bc974e6943045d116b487a1de40836d3b43") ;;commit
+  (parse-tree-object project-root "a672dea289281cfda525e228eb5750cbc932b6cf") ;;src
+  (parse-blob-object project-root "9ea856d4823304e8f743fcab5920e708692ef6ce")
+
+  
+  (-> (cat-file project-root "d3a17365deab73f0409e25868bf9643f44f85dab" ;;"9ea856d4823304e8f743fcab5920e708692ef6ce"
+                )
+      vd/seq->char-seq
+      vd/char-seq->str)
+
   
   
+  (hash-tree [{:mode "100644",
+               :path "agit.cljc",
+               :sha1 "9ea856d4823304e8f743fcab5920e708692ef6ce"}])
+
+  (hash-tree [{:mode "40000",
+               :path "stigmergy",
+               :sha1 "d3a17365deab73f0409e25868bf9643f44f85dab"}]
+             )
   
   (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
                                         (let [mode-path (vd/str->seq (str mode " " path))
@@ -658,8 +698,6 @@
     )
 
   (get-tree-entries-in-snapshot project-root)
-
-
   
   (defn branch? [node]
     (and (vector? node)
