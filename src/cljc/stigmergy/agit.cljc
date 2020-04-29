@@ -90,11 +90,12 @@
     content))
 
 (defn hash-tree [tree-entries]
-  (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
-                                      (let [mode-path (vd/str->seq (str mode " " path))
-                                            sha1-binary (vd/hex->seq sha1)]
-                                        (concat mode-path [0] sha1-binary)))
-                                    tree-entries))))
+  (if-not (empty? tree-entries)
+    (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
+                                        (let [mode-path (vd/str->seq (str mode " " path))
+                                              sha1-binary (vd/hex->seq sha1)]
+                                          (concat mode-path [0] sha1-binary)))
+                                      tree-entries)))))
 
 (defn write-blob
   "write blob to .git/objects return the sha1 hash of blob"
@@ -510,9 +511,7 @@
     (map index-entry->tree-entry (:entries index))))
 
 (defn tree-snapshot [project-root]
-  (let [
-        
-        tree-entries (get-tree-entries-in-snapshot project-root)
+  (let [tree-entries (get-tree-entries-in-snapshot project-root)
         tree-seq (flatten (map (fn [{:keys [mode path sha1]}]
                                  (let [mode-path (vd/str->seq (str mode " " path))
                                        sha1-binary (vd/hex->seq sha1)]
@@ -520,6 +519,33 @@
                                tree-entries))
         sha1-hex-str (hash-object "tree" tree-seq)]
     [sha1-hex-str tree-seq]))
+
+(comment
+  (let [tree-entries (get-tree-entries-in-snapshot project-root)
+        tree-entries (map (fn [tree-entry]
+                            (let [mode (:mode tree-entry)
+                                  sha1 (:sha1 tree-entry)
+                                  paths (-> tree-entry :path n/str->path reverse)]
+                              (reduce (fn [acc path]
+                                        (let [previous-node (last acc)]
+                                          (prn "prev=" previous-node)
+                                          (if previous-node
+                                            (conj acc {:mode "40000"
+                                                       :path path
+                                                       :sha1 (hash-tree [previous-node])})
+                                            (conj acc {:mode mode
+                                                       :path path
+                                                       :sha1 sha1})
+                                            )))
+                                      []
+                                      paths)
+                              )
+                            )
+                          tree-entries)]
+    tree-entries
+    )
+
+  )
 
 (defn write-compressed-tree-snapshot [project-root]
   (let [[sha1-hex-str tree-seq] (tree-snapshot project-root)
@@ -637,7 +663,7 @@
       vd/char-seq->str)
 
   
-  
+
   (hash-tree [{:mode "100644",
                :path "agit.cljc",
                :sha1 "9ea856d4823304e8f743fcab5920e708692ef6ce"}])
@@ -649,6 +675,10 @@
   (hash-tree [{:mode "40000",
                :path "cljc",
                :sha1 "f7adef825635430158f301630b0845869f61dd44"}])
+
+  (hash-tree [{:mode "40000",
+               :path "src",
+               :sha1 "8bb8177731e14225fbcd14bb0ec99d7fb9392e46"}])
   
   (hash-object "tree" (flatten (map (fn [{:keys [mode path sha1]}]
                                         (let [mode-path (vd/str->seq (str mode " " path))
