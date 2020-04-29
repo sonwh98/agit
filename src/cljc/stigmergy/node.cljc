@@ -1,6 +1,7 @@
 (ns stigmergy.node
-  (:require [stigmergy.tily :as tily]
-            [clojure.string :as str]
+  (:require [clojure.string :as string]
+            [clojure.walk :as w]
+            [stigmergy.tily :as tily]
             [taoensso.timbre :as log :include-macros true]))
 
 (defn file? [f-or-d ]
@@ -13,10 +14,25 @@
   (-> node :parent nil?))
 
 (defn str->path [f]
-  (let [path (clojure.string/split f #"/")]
+  (let [path (string/split f #"/")]
     (if (-> path first str/blank?)
       (-> path rest vec)
       path)))
+
+(defn path->str [path]
+  (string/join "/" path))
+
+(defn node->path [node]
+  (let [paths (atom [])]
+    (w/postwalk (fn [n]
+                  (if (string? n)
+                    (swap! paths conj n))
+                  n)
+                node)
+    (-> @paths distinct vec)))
+
+(defn path->node [paths]
+  (->node-helper paths paths {}))
 
 (defn get-name [node]
   (let [name (cond
@@ -71,9 +87,6 @@
               (let [n2 (assoc n :parent parent-path)]
                 n2)))))
 
-(defn path->node [paths]
-  (->node-helper paths paths {}))
-
 (clojure.set/intersection #{1 2} #{2 3})
 
 (defn index-of [nodes k]
@@ -127,4 +140,15 @@
   (def nodes (mapv (fn [n]
                      (-> n str->path path->node)) files))
   (reduce join-node nodes)
+
+  (def n1 (first nodes))
+
+
+  
+  ["scramblies" "resources" "public" "index.html"]
+  (node->path n1)
+
+  (-> n1 node->path path->str)
+
+  (distinct @c)
   )
