@@ -15,7 +15,7 @@
 
 (defn str->path [f]
   (let [path (string/split f #"/")]
-    (if (-> path first str/blank?)
+    (if (-> path first string/blank?)
       (-> path rest vec)
       path)))
 
@@ -31,8 +31,7 @@
                 node)
     (-> @paths distinct vec)))
 
-(defn path->node [paths]
-  (->node-helper paths paths {}))
+
 
 (defn get-name [node]
   (let [name (cond
@@ -55,7 +54,7 @@
   (->> full-path (drop-last (count paths)) vec))
 
 (defn get-node-path [node] 
-  (let [parent-path-str (str "/" (str/join "/" (:parent node)))]
+  (let [parent-path-str (str "/" (string/join "/" (:parent node)))]
     (if (file?  node)
       (let [file-name (:file/name node)]
         (str parent-path-str "/" file-name))
@@ -87,7 +86,8 @@
               (let [n2 (assoc n :parent parent-path)]
                 n2)))))
 
-(clojure.set/intersection #{1 2} #{2 3})
+(defn path->node [paths]
+  (->node-helper paths paths {}))
 
 (defn index-of [nodes k]
   (->> (tily/with-index nodes)
